@@ -1,0 +1,25 @@
+{
+  "name": "vikd00-eshop-be",
+  "version": "1.0.0",
+  "author": "David Vikor",
+  "description": "Eshop Backend",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "test": "ava",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "keywords": [],
+  "license": "MIT",
+  "dependencies": {
+    "@hono/node-server": "^1.13.8",
+    "@hono/node-ws": "^1.1.1",
+    "@libsql/client": "^0.15.2",
+    "ava": "^6.2.0",
+    "drizzle-kit": "^0.30.6",
+    "drizzle-orm": "^0.41.0",
+    "hono": "^4.7.4"
+  }
+}
