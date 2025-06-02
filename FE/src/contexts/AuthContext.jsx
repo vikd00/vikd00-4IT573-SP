@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { loginUser, registerUser, getUserProfile } from '../api/users.js';
 
 const AuthContext = createContext();
 
@@ -14,29 +15,32 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
-
   useEffect(() => {
     // Check if user is authenticated on app load
-    if (token) {
-      // TODO: Validate token with backend
+    const checkAuth = async () => {
+      if (token) {
+        try {
+          const userData = await getUserProfile(token);
+          setUser(userData);
+        } catch (error) {
+          console.error('Token validation failed:', error);
+          // Token is invalid, remove it
+          localStorage.removeItem('token');
+          setToken(null);
+        }
+      }
       setLoading(false);
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
+    };
 
+    checkAuth();
+  }, [token]);
   const login = async (username, password) => {
     try {
-      // TODO: Call login API
-      console.log('Login attempt:', { username, password });
+      const result = await loginUser({ username, password });
       
-      // Mock login for now
-      const mockUser = { id: 1, username, role: 'user' };
-      const mockToken = 'mock-jwt-token';
-      
-      setUser(mockUser);
-      setToken(mockToken);
-      localStorage.setItem('token', mockToken);
+      setUser(result.user);
+      setToken(result.token);
+      localStorage.setItem('token', result.token);
       
       return { success: true };
     } catch (error) {
@@ -44,41 +48,31 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message };
     }
   };
-
   const loginAdmin = async (username, password) => {
     try {
-      // TODO: Call admin login API
-      console.log('Admin login attempt:', { username, password });
+      const result = await loginUser({ username, password });
       
-      // Mock admin login for now
-      const mockAdmin = { id: 1, username, role: 'admin' };
-      const mockToken = 'mock-admin-jwt-token';
+      // Check if the user has admin role
+      if (result.user.role !== 'admin') {
+        return { success: false, error: 'Access denied. Admin privileges required.' };
+      }
       
-      setUser(mockAdmin);
-      setToken(mockToken);
-      localStorage.setItem('token', mockToken);
+      setUser(result.user);
+      setToken(result.token);
+      localStorage.setItem('token', result.token);
       
       return { success: true };
     } catch (error) {
       console.error('Admin login error:', error);
       return { success: false, error: error.message };
     }
-  };
-
-  const register = async (username, password) => {
+  };const register = async (username, password) => {
     try {
-      // TODO: Call register API
-      console.log('Register attempt:', { username, password });
+      const user = await registerUser({ username, password });
       
-      // Mock registration for now
-      const mockUser = { id: 2, username, role: 'user' };
-      const mockToken = 'mock-jwt-token-new';
-      
-      setUser(mockUser);
-      setToken(mockToken);
-      localStorage.setItem('token', mockToken);
-      
-      return { success: true };
+      // Registration successful, but user needs to login to get a token
+      // For better UX, let's automatically log them in
+      return await login(username, password);
     } catch (error) {
       console.error('Register error:', error);
       return { success: false, error: error.message };
