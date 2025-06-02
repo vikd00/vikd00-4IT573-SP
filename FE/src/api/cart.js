@@ -10,7 +10,7 @@ export const getCart = async (token) => {
 
 // Add item to cart
 export const addToCart = async (productId, quantity, token) => {
-  return apiRequest('/api/cart', {
+  return apiRequest('/api/cart/items', {
     method: 'POST',
     body: JSON.stringify({ productId, quantity }),
     token,
@@ -18,8 +18,8 @@ export const addToCart = async (productId, quantity, token) => {
 };
 
 // Update cart item quantity
-export const updateCartItem = async (productId, quantity, token) => {
-  return apiRequest(`/api/cart/${productId}`, {
+export const updateCartItem = async (itemId, quantity, token) => {
+  return apiRequest(`/api/cart/items/${itemId}`, {
     method: 'PUT',
     body: JSON.stringify({ quantity }),
     token,
@@ -27,8 +27,8 @@ export const updateCartItem = async (productId, quantity, token) => {
 };
 
 // Remove item from cart
-export const removeFromCart = async (productId, token) => {
-  return apiRequest(`/api/cart/${productId}`, {
+export const removeFromCart = async (itemId, token) => {
+  return apiRequest(`/api/cart/items/${itemId}`, {
     method: 'DELETE',
     token,
   });

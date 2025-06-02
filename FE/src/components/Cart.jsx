@@ -24,17 +24,10 @@ const Cart = () => {
     getCartItemsCount
   } = useCart();
 
-  const [promoCode, setPromoCode] = useState('');
-
   const handleQuantityChange = (productId, newQuantity) => {
     if (newQuantity >= 0) {
       updateQuantity(productId, newQuantity);
     }
-  };
-
-  const handleApplyPromoCode = () => {
-    // TODO: Implement promo code logic
-    console.log('Applying promo code:', promoCode);
   };
 
   if (cartItems.length === 0) {
@@ -134,23 +127,6 @@ const Cart = () => {
               <Typography variant="h6" gutterBottom>
                 Súhrn objednávky
               </Typography>
-
-              <Box mb={2}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Promo kód"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  InputProps={{
-                    endAdornment: (
-                      <Button size="small" onClick={handleApplyPromoCode}>
-                        Použiť
-                      </Button>
-                    )
-                  }}
-                />
-              </Box>
 
               <Divider sx={{ my: 2 }} />
 

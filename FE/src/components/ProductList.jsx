@@ -1,40 +1,135 @@
+import { useState, useEffect, useMemo } from "react";
 import {
+  Box,
+  TextField,
+  InputAdornment,
+  ToggleButtonGroup,
+  ToggleButton,
+  Typography,
+  Alert,
   Grid,
   Card,
   CardMedia,
   CardContent,
   CardActions,
-  Typography,
   Button,
   Chip,
-  Box,
-  CircularProgress
-} from '@mui/material';
-import { AddShoppingCart, Visibility } from '@mui/icons-material';
-import { useCart } from '../contexts/CartContext';
-import { useNavigate } from 'react-router-dom';
+  CircularProgress,
+} from "@mui/material";
+import {
+  Search,
+  TrendingUp,
+  TrendingDown,
+  AddShoppingCart,
+  Visibility,
+} from "@mui/icons-material";
+import { useCart } from "../contexts/CartContext";
+import { useNavigate } from "react-router-dom";
+import { getProducts } from "../api/products";
 
-const ProductList = ({ products = [], loading = false }) => {
+// Helper function to remove diacritics and punctuation for search
+const normalizeSearchText = (text) => {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+    .replace(/[^\w\s]/g, "") // Remove punctuation
+    .trim();
+};
+
+const ProductList = ({
+  showSearch = true,
+  showFilters = true,
+  title = null,
+  maxResults = null,
+}) => {
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" py={4}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // State for products data
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  if (products.length === 0) {
-    return (
-      <Box textAlign="center" py={4}>
-        <Typography variant="h6" color="text.secondary">
-          Žiadne produkty neboli nájdené
-        </Typography>
-      </Box>
-    );
-  }
+  // State for search and filtering
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
+
+  // Fetch products from backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const productsData = await getProducts();
+
+        // Convert price from cents to euros for display
+        const productsWithFormattedPrice = productsData.map((product) => ({
+          ...product,
+          price: product.price / 100, // Convert cents to euros
+        }));
+
+        setProducts(productsWithFormattedPrice);
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setError("Chyba pri načítavaní produktov. Skúste to znovu.");
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Filter and sort products
+  const processedProducts = useMemo(() => {
+    let filtered = products;
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const normalizedSearch = normalizeSearchText(searchTerm);
+      filtered = products.filter((product) => {
+        const normalizedName = normalizeSearchText(product.name || "");
+        const normalizedDesc = normalizeSearchText(product.description || "");
+        return (
+          normalizedName.includes(normalizedSearch) ||
+          normalizedDesc.includes(normalizedSearch)
+        );
+      });
+    }
+
+    // Apply sorting
+    if (sortOrder) {
+      filtered = [...filtered].sort((a, b) => {
+        if (sortOrder === "price-asc") {
+          return (a.price || 0) - (b.price || 0);
+        }
+        if (sortOrder === "price-desc") {
+          return (b.price || 0) - (a.price || 0);
+        }
+        return 0;
+      });
+    }
+
+    // Apply max results limit
+    if (maxResults && filtered.length > maxResults) {
+      filtered = filtered.slice(0, maxResults);
+    }
+
+    return filtered;
+  }, [products, searchTerm, sortOrder, maxResults]);
+
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
+  const handleSortChange = (event, newSortOrder) => {
+    setSortOrder(newSortOrder);
+  };
 
   const handleAddToCart = (product) => {
     addToCart(product, 1);
@@ -44,87 +139,199 @@ const ProductList = ({ products = [], loading = false }) => {
     navigate(`/products/${productId}`);
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" py={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
-    <Grid container spacing={3}>
-      {products.map((product) => (
-        <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-          <Card 
-            sx={{ 
-              height: '100%', 
-              display: 'flex', 
-              flexDirection: 'column',
-              transition: 'transform 0.2s',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 3
-              }
-            }}
-          >
-            <CardMedia
-              component="img"
-              height="200"
-              image={product.image || '/api/placeholder/300/200'}
-              alt={product.name}
-              sx={{ objectFit: 'cover' }}
-            />
-            
-            <CardContent sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" component="h2" gutterBottom noWrap>
-                {product.name}
-              </Typography>
-              
-              <Typography 
-                variant="body2" 
-                color="text.secondary" 
-                sx={{ 
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  mb: 2
+    <Box>
+      {/* Title */}
+      {title && (
+        <Typography variant="h4" gutterBottom>
+          {title}
+        </Typography>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Search and Filter Controls */}
+      {(showSearch || showFilters) && (
+        <Box sx={{ mb: 4 }}>
+          <Grid container spacing={2} alignItems="center">
+            {/* Search Bar */}
+            {showSearch && (
+              <Grid item xs={12} md={showFilters ? 8 : 12}>
+                <TextField
+                  fullWidth
+                  placeholder="Hľadať produkty..."
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchTerm && (
+                      <InputAdornment position="end">
+                        <Button size="small" onClick={clearSearch}>
+                          Vymazať
+                        </Button>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+            )}
+
+            {/* Sort Filters */}
+            {showFilters && (
+              <Grid item xs={12} md={showSearch ? 4 : 12}>
+                <Box display="flex" justifyContent="flex-end">
+                  <ToggleButtonGroup
+                    value={sortOrder}
+                    exclusive
+                    onChange={handleSortChange}
+                    size="small"
+                    aria-label="sort products"
+                  >
+                    <ToggleButton
+                      value="price-asc"
+                      aria-label="price ascending"
+                    >
+                      <TrendingUp sx={{ mr: 0.5 }} />
+                      Cena ↑
+                    </ToggleButton>
+                    <ToggleButton
+                      value="price-desc"
+                      aria-label="price descending"
+                    >
+                      <TrendingDown sx={{ mr: 0.5 }} />
+                      Cena ↓
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+              </Grid>
+            )}
+          </Grid>
+
+          {/* Results Info */}
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            {searchTerm
+              ? `Nájdených ${processedProducts.length} produktov pre "${searchTerm}"`
+              : `Zobrazených ${processedProducts.length} produktov`}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Products Grid */}
+      {processedProducts.length === 0 && !loading ? (
+        <Box textAlign="center" py={4}>
+          <Typography variant="h6" color="text.secondary">
+            {searchTerm
+              ? "Žiadne produkty neboli nájdené pre zadané kritériá"
+              : "Žiadne produkty nie sú k dispozícii"}
+          </Typography>
+        </Box>
+      ) : (
+        <Grid container spacing={3}>
+          {processedProducts.map((product) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+              <Card
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  transition: "transform 0.2s",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: 3,
+                  },
                 }}
               >
-                {product.description}
-              </Typography>
-              
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6" color="primary">
-                  €{product.price?.toFixed(2)}
-                </Typography>
-                
-                <Chip
-                  label={product.inventory > 0 ? `Skladom: ${product.inventory}` : 'Vypredané'}
-                  color={product.inventory > 0 ? 'success' : 'error'}
-                  size="small"
+                <CardMedia
+                  component="img"
+                  height="200"
+                  image={product.imageUrl || "/api/placeholder/300/200"}
+                  alt={product.name}
+                  sx={{ objectFit: "cover" }}
                 />
-              </Box>
-            </CardContent>
-            
-            <CardActions sx={{ p: 2, pt: 0 }}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<Visibility />}
-                onClick={() => handleViewProduct(product.id)}
-                sx={{ mr: 1 }}
-              >
-                Zobraziť
-              </Button>
-              
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddShoppingCart />}
-                onClick={() => handleAddToCart(product)}
-                disabled={product.inventory <= 0}
-              >
-                Do košíka
-              </Button>
-            </CardActions>
-          </Card>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography variant="h6" component="h2" gutterBottom noWrap>
+                    {product.name}
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      mb: 2,
+                    }}
+                  >
+                    {product.description}
+                  </Typography>
+
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={1}
+                  >
+                    <Typography variant="h6" color="primary">
+                      €{product.price?.toFixed(2)}
+                    </Typography>
+
+                    <Chip
+                      label={
+                        product.inventory > 0
+                          ? `Skladom: ${product.inventory}`
+                          : "Vypredané"
+                      }
+                      color={product.inventory > 0 ? "success" : "error"}
+                      size="small"
+                    />
+                  </Box>
+                </CardContent>
+                <CardActions sx={{ p: 2, pt: 0 }}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<Visibility />}
+                    onClick={() => handleViewProduct(product.id)}
+                    sx={{ mr: 1 }}
+                  >
+                    Zobraziť
+                  </Button>
+
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<AddShoppingCart />}
+                    onClick={() => handleAddToCart(product)}
+                    disabled={product.inventory <= 0}
+                  >
+                    Do košíka
+                  </Button>
+                </CardActions>{" "}
+              </Card>
+            </Grid>
+          ))}
         </Grid>
-      ))}
-    </Grid>
+      )}
+    </Box>
   );
 };
 
