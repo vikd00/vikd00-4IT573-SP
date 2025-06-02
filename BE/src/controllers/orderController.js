@@ -128,3 +128,31 @@ export async function getAllOrders() {
     .from(schema.orders)
     .all();
 }
+
+export async function getAdminDashboardStats() {
+  // Get basic statistics for admin dashboard
+  const totalOrders = await db.select().from(schema.orders).all();
+  const totalProducts = await db.select().from(schema.products).all();
+  const totalUsers = await db.select().from(schema.users).all();
+  
+  const ordersByStatus = {
+    pending: totalOrders.filter(order => order.status === 'pending').length,
+    processing: totalOrders.filter(order => order.status === 'processing').length,
+    shipped: totalOrders.filter(order => order.status === 'shipped').length,
+    delivered: totalOrders.filter(order => order.status === 'delivered').length
+  };
+  
+  const lowStockProducts = totalProducts.filter(product => product.inventory < 10);
+  
+  return {
+    totalOrders: totalOrders.length,
+    totalProducts: totalProducts.length,
+    totalUsers: totalUsers.length,
+    ordersByStatus,
+    lowStockProducts: lowStockProducts.map(p => ({
+      id: p.id,
+      name: p.name,
+      inventory: p.inventory
+    }))
+  };
+}
