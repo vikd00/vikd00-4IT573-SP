@@ -32,7 +32,7 @@ const CheckoutPage = () => {
     address: "",
     city: "",
     postalCode: "",
-    country: "Slovensko",
+    country: "Česká republika",
   });
 
   const [loading, setLoading] = useState(false);
@@ -85,11 +85,13 @@ const CheckoutPage = () => {
           order?.error?.message || "Chyba pri vytváraní objednávky"
         );
       }
-
       try {
-        await clearCart();
+        await clearCart(true);
       } catch (cartError) {
-        console.warn("Error clearing cart, but order was created:", cartError);
+        console.warn(
+          "Error clearing cart state, but order was created:",
+          cartError
+        );
       }
 
       navigate("/orders", {
