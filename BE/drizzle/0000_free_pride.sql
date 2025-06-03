@@ -49,6 +49,11 @@ CREATE TABLE `users` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`username` text NOT NULL,
 	`password_hash` text NOT NULL,
+	`email` text,
+	`first_name` text,
+	`last_name` text,
+	`phone` text,
+	`address` text,
 	`role` text DEFAULT 'user' NOT NULL,
 	`created_at` text NOT NULL
 );

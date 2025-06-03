@@ -5,6 +5,11 @@ export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  email: text('email'),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  phone: text('phone'),
+  address: text('address'),
   role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
