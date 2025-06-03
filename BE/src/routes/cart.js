@@ -82,4 +82,23 @@ router.delete("/items/:id", async (c) => {
   }
 });
 
+// Add new route to clear the entire cart
+router.delete("/", async (c) => {
+  try {
+    const userId = c.get("userId");
+    
+    const result = await cartController.clearCart(userId);
+    await broadcastCartUpdate(userId);
+    return c.json(result);
+  } catch (error) {
+    return c.json({ 
+      error: {
+        code: "INVALID_INPUT",
+        message: error.message,
+        details: {}
+      }
+    }, 400);
+  }
+});
+
 export default router;

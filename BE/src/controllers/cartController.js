@@ -151,3 +151,15 @@ export async function removeCartItem(userId, itemId) {
 
   return getCartByUserId(userId);
 }
+
+export async function clearCart(userId) {
+  // Get cart
+  const cart = await getCartByUserId(userId);
+
+  // Delete all items from cart
+  await db
+    .delete(schema.cartItems)
+    .where(eq(schema.cartItems.cartId, cart.id));
+
+  return getCartByUserId(userId);
+}
