@@ -32,7 +32,7 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 const theme = createTheme({
   palette: {
     primary: {
-      main: "#1976d2",
+      main: "#2b5876",
     },
     secondary: {
       main: "#dc004e",

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -14,71 +14,96 @@ import {
   List,
   ListItem,
   ListItemText,
-  Alert
-} from '@mui/material';
-import { useCart } from '../contexts/CartContext';
-import { useAuth } from '../contexts/AuthContext';
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import { useCart } from "../contexts/CartContext";
+import { useAuth } from "../contexts/AuthContext";
+import { createOrder } from "../api/orders";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { cartItems, getCartTotal, clearCart } = useCart();
-  const { isAuthenticated } = useAuth();
-  
+  const { user, isAuthenticated, token } = useAuth();
+
   const [shippingData, setShippingData] = useState({
-    firstName: '',
-    lastName: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    country: 'Slovensko'
+    firstName: "",
+    lastName: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    country: "Slovensko",
   });
-  
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setShippingData({
       ...shippingData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated()) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
     if (cartItems.length === 0) {
-      setError('Váš košík je prázdny');
+      setError("Váš košík je prázdny");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      // TODO: Call order creation API
-      console.log('Creating order:', {
-        items: cartItems,
-        shippingAddress: shippingData,
-        total: getCartTotal() + 5 // Including shipping
-      });
+      const requiredFields = [
+        "firstName",
+        "lastName",
+        "address",
+        "city",
+        "postalCode",
+      ];
+      const missingFields = requiredFields.filter(
+        (field) => !shippingData[field]
+      );
 
-      // Mock order creation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      clearCart();
-      navigate('/orders', { 
-        state: { 
-          message: 'Objednávka bola úspešne vytvorená!' 
-        } 
+      if (missingFields.length > 0) {
+        throw new Error("Vyplňte prosím všetky povinné polia");
+      }
+
+      const formattedAddress = `${shippingData.firstName} ${shippingData.lastName}, ${shippingData.address}, ${shippingData.city}, ${shippingData.postalCode}, ${shippingData.country}`;
+
+      const order = await createOrder(formattedAddress, token);
+
+      if (!order || order.error) {
+        throw new Error(
+          order?.error?.message || "Chyba pri vytváraní objednávky"
+        );
+      }
+
+      try {
+        await clearCart();
+      } catch (cartError) {
+        console.warn("Error clearing cart, but order was created:", cartError);
+      }
+
+      navigate("/orders", {
+        state: {
+          message: "Objednávka bola úspešne vytvorená!",
+          orderId: order.id,
+        },
       });
-      
     } catch (err) {
-      setError('Nastala chyba pri vytváraní objednávky');
+      console.error("Error creating order:", err);
+      setError(
+        "Nastala chyba pri vytváraní objednávky: " +
+          (err.message || "Neznáma chyba")
+      );
     } finally {
       setLoading(false);
     }
@@ -91,7 +116,7 @@ const CheckoutPage = () => {
           <Typography variant="h5" gutterBottom>
             Váš košík je prázdny
           </Typography>
-          <Button variant="contained" onClick={() => navigate('/products')}>
+          <Button variant="contained" onClick={() => navigate("/products")}>
             Pokračovať v nakupovaní
           </Button>
         </Box>
@@ -100,9 +125,9 @@ const CheckoutPage = () => {
   }
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl">
       <Box py={4}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" mb={3}>
           Dokončenie objednávky
         </Typography>
 
@@ -114,15 +139,15 @@ const CheckoutPage = () => {
 
         <Grid container spacing={4}>
           {/* Shipping Form */}
-          <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Dodacia adresa
-              </Typography>
+          <Grid item size={{ xs: 12, sm: 6 }}>
+            <Card sx={{ width: "100%" }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Dodacia adresa
+                </Typography>
 
-              <Box component="form" onSubmit={handleSubmit}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                <Box component="form" onSubmit={handleSubmit}>
+                  <Box display="flex" flexDirection="column" gap={3}>
                     <TextField
                       required
                       fullWidth
@@ -132,9 +157,6 @@ const CheckoutPage = () => {
                       onChange={handleChange}
                       disabled={loading}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
                     <TextField
                       required
                       fullWidth
@@ -144,9 +166,6 @@ const CheckoutPage = () => {
                       onChange={handleChange}
                       disabled={loading}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12}>
                     <TextField
                       required
                       fullWidth
@@ -156,9 +175,6 @@ const CheckoutPage = () => {
                       onChange={handleChange}
                       disabled={loading}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
                     <TextField
                       required
                       fullWidth
@@ -168,9 +184,6 @@ const CheckoutPage = () => {
                       onChange={handleChange}
                       disabled={loading}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
                     <TextField
                       required
                       fullWidth
@@ -180,9 +193,6 @@ const CheckoutPage = () => {
                       onChange={handleChange}
                       disabled={loading}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12}>
                     <TextField
                       required
                       fullWidth
@@ -192,25 +202,30 @@ const CheckoutPage = () => {
                       onChange={handleChange}
                       disabled={loading}
                     />
-                  </Grid>
-                </Grid>
-
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  disabled={loading}
-                  sx={{ mt: 3 }}
-                >
-                  {loading ? 'Spracováva sa...' : 'Dokončiť objednávku'}
-                </Button>
-              </Box>
-            </Paper>
+                  </Box>{" "}
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    disabled={loading}
+                    sx={{ mt: 3 }}
+                  >
+                    {loading ? (
+                      <>
+                        <CircularProgress size={24} sx={{ mr: 1 }} />
+                        Spracováva sa...
+                      </>
+                    ) : (
+                      "Dokončiť objednávku"
+                    )}
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
           </Grid>
-
           {/* Order Summary */}
-          <Grid item xs={12} md={4}>
-            <Card>
+          <Grid item size={{ xs: 12, sm: 6 }}>
+            <Card sx={{ width: "100%" }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Súhrn objednávky
@@ -221,7 +236,9 @@ const CheckoutPage = () => {
                     <ListItem key={item.id} sx={{ px: 0 }}>
                       <ListItemText
                         primary={item.name}
-                        secondary={`${item.quantity}x €${item.price.toFixed(2)}`}
+                        secondary={`${item.quantity}x €${item.price.toFixed(
+                          2
+                        )}`}
                       />
                       <Typography variant="body2">
                         €{(item.price * item.quantity).toFixed(2)}

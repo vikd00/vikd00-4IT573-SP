@@ -19,7 +19,7 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-  const { user, token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated } = useAuth();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -184,7 +184,6 @@ export const CartProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
   const clearCart = async () => {
     try {
       setError(null);
@@ -192,12 +191,16 @@ export const CartProvider = ({ children }) => {
       if (isAuthenticated() && token) {
         setLoading(true);
         await clearCartAPI(token);
+      } else {
+        localStorage.removeItem('cart');
       }
       
       setCartItems([]);
+      return true;  
     } catch (err) {
       console.error('Error clearing cart:', err);
       setError('Chyba pri vyprázdňovaní košíka');
+      throw err;  
     } finally {
       setLoading(false);
     }

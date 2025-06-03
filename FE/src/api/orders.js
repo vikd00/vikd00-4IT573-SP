@@ -1,9 +1,10 @@
 import { apiRequest } from './config.js';
 
 // Create order from cart
-export const createOrder = async (token) => {
+export const createOrder = async (shippingAddress, token) => {
   return apiRequest('/api/orders', {
     method: 'POST',
+    body: JSON.stringify({ shippingAddress }),
     token,
   });
 };
