@@ -78,11 +78,14 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message };
     }
   };
-
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+  };
+
+  const updateUser = (updatedUserData) => {
+    setUser(updatedUserData);
   };
 
   const isAdmin = () => {
@@ -92,7 +95,6 @@ export const AuthProvider = ({ children }) => {
   const isAuthenticated = () => {
     return !!user && !!token;
   };
-
   const value = {
     user,
     token,
@@ -101,6 +103,7 @@ export const AuthProvider = ({ children }) => {
     loginAdmin,
     register,
     logout,
+    updateUser,
     isAdmin,
     isAuthenticated
   };
