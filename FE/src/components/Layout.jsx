@@ -1,20 +1,28 @@
-import React from 'react';
-import { Box, Container } from '@mui/material';
-import Header from './Header';
-import WebSocketNotification from './WebSocketNotification';
+import React from "react";
+import { Box, Container } from "@mui/material";
+import Header from "./Header";
+import WebSocketNotification from "./WebSocketNotification";
 
-const Layout = ({ children, fullWidth = false, hideWebSocket = false }) => {
+const Layout = ({ children }) => {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+      }}
+    >
       <Header />
-      {!hideWebSocket && <WebSocketNotification />}
-      
-      <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
-        {fullWidth ? (
-          <Box sx={{ width: '100%' }}>
-            {children}
-          </Box>
-        ) : (
+      <WebSocketNotification />
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          py: 3,
+        }}
+      >
+        {children && (
           <Container maxWidth="lg">
             {children}
           </Container>

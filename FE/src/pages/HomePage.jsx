@@ -8,11 +8,15 @@ const HomePage = () => {
 	const navigate = useNavigate();
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box
+      sx={{
+        width: "100%",
+      }}
+    >
       {/* Hero sekcia */}
       <Box
         sx={{
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background: "linear-gradient(to right, #2b5876, #4e4376);",
           color: "white",
           py: 8,
           textAlign: "center",
