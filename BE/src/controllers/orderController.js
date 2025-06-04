@@ -142,10 +142,57 @@ export async function updateOrderStatus(orderId, status) {
 }
 
 export async function getAllOrders() {
-  return await db
-    .select()
+  const orders = await db
+    .select({
+      id: schema.orders.id,
+      userId: schema.orders.userId,
+      status: schema.orders.status,
+      shippingAddress: schema.orders.shippingAddress,
+      createdAt: schema.orders.createdAt,
+      updatedAt: schema.orders.updatedAt,
+      username: schema.users.username,
+      email: schema.users.email,
+      firstName: schema.users.firstName,
+      lastName: schema.users.lastName
+    })
     .from(schema.orders)
+    .leftJoin(schema.users, eq(schema.orders.userId, schema.users.id))
+    .orderBy(desc(schema.orders.createdAt))
     .all();
+
+  // Get order items for each order
+  const ordersWithDetails = await Promise.all(
+    orders.map(async (order) => {
+      const orderItems = await db
+        .select({
+          id: schema.orderItems.id,
+          productId: schema.orderItems.productId,
+          quantity: schema.orderItems.quantity,
+          price: schema.orderItems.price,
+          name: schema.products.name,
+          imageUrl: schema.products.imageUrl,
+        })
+        .from(schema.orderItems)
+        .leftJoin(
+          schema.products,
+          eq(schema.orderItems.productId, schema.products.id)
+        )
+        .where(eq(schema.orderItems.orderId, order.id))
+        .all();
+
+      return {
+        ...order,
+        items: orderItems,
+        totalItems: orderItems.reduce((sum, item) => sum + item.quantity, 0),
+        totalPrice: orderItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        ),
+      };
+    })
+  );
+
+  return ordersWithDetails;
 }
 
 export async function getAdminDashboardStats() {
@@ -174,4 +221,26 @@ export async function getAdminDashboardStats() {
       inventory: p.inventory
     }))
   };
+}
+
+export async function deleteOrder(orderId) {
+  // First check if order exists and get its status
+  const order = await getOrderById(orderId);
+  
+  if (!order) {
+    throw new Error("Order not found");
+  }
+  
+  // Only allow deletion of cancelled orders
+  if (order.status !== 'cancelled') {
+    throw new Error("Only cancelled orders can be deleted");
+  }
+  
+  // Delete order items first (due to foreign key constraints)
+  await db.delete(schema.orderItems).where(eq(schema.orderItems.orderId, orderId));
+  
+  // Delete the order
+  await db.delete(schema.orders).where(eq(schema.orders.id, orderId));
+  
+  return { success: true, message: "Order deleted successfully" };
 }
