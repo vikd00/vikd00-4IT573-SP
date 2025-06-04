@@ -58,4 +58,21 @@ router.put("/:id", async (c) => {
   }
 });
 
+router.delete("/:id", async (c) => {
+  try {
+    const productId = Number(c.req.param("id"));
+    await productController.deleteProduct(productId);
+    await broadcastInventoryUpdate();
+    return c.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    return c.json({ 
+      error: {
+        code: "INVALID_INPUT",
+        message: error.message,
+        details: {}
+      }
+    }, 400);
+  }
+});
+
 export default router;

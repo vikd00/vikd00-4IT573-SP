@@ -34,3 +34,16 @@ export async function updateProduct(id, updates) {
 
   return getProductById(id);
 }
+
+export async function deleteProduct(id) {
+  const product = await getProductById(id);
+  if (!product) {
+    throw new Error("Product not found");
+  }
+  
+  await db
+    .delete(schema.products)
+    .where(eq(schema.products.id, id));
+    
+  return product;
+}
