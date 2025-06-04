@@ -1,4 +1,7 @@
 import jwt from "jsonwebtoken";
+import { db } from "../config/database.js";
+import { eq } from "drizzle-orm";
+import * as schema from "../models/schema.js";
 
 // Regular user authentication
 export const authMiddleware = async (c, next) => {
@@ -13,6 +16,18 @@ export const authMiddleware = async (c, next) => {
     
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+      
+      // Check if user is still active in the database
+      const user = await db
+        .select({ active: schema.users.active })
+        .from(schema.users)
+        .where(eq(schema.users.id, decoded.userId))
+        .get();
+      
+      if (!user || !user.active) {
+        return c.json({ error: "Unauthorized: Account is deactivated" }, 401);
+      }
+      
       c.set("userId", decoded.userId);
       c.set("userRole", decoded.role);
       

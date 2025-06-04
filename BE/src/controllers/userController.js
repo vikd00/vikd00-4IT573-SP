@@ -42,6 +42,11 @@ export async function loginUser({ username, password }) {
     throw new Error("Invalid credentials");
   }
 
+  // Check if user is active
+  if (!user.active) {
+    throw new Error("Account is deactivated. Please contact support.");
+  }
+
   // Check password
   const passwordMatch = await bcrypt.compare(password, user.passwordHash);
   if (!passwordMatch) {
@@ -65,6 +70,7 @@ export async function loginUser({ username, password }) {
       phone: user.phone,
       address: user.address,
       role: user.role,
+      active: user.active,
     },
   };
 }
@@ -80,6 +86,7 @@ export async function getUserById(id) {
       phone: schema.users.phone,
       address: schema.users.address,
       role: schema.users.role,
+      active: schema.users.active,
       createdAt: schema.users.createdAt,
     })
     .from(schema.users)
@@ -136,8 +143,33 @@ export async function getAllUsers() {
       phone: schema.users.phone,
       address: schema.users.address,
       role: schema.users.role,
+      active: schema.users.active,
       createdAt: schema.users.createdAt,
     })
     .from(schema.users)
     .all();
+}
+
+// Admin function to activate/deactivate users
+export async function setUserActiveStatus(userId, active) {
+  await db
+    .update(schema.users)
+    .set({ active })
+    .where(eq(schema.users.id, userId));
+  
+  return getUserById(userId);
+}
+
+// Admin function to update user role
+export async function updateUserRole(userId, role) {
+  if (!['user', 'admin'].includes(role)) {
+    throw new Error("Invalid role. Must be 'user' or 'admin'");
+  }
+  
+  await db
+    .update(schema.users)
+    .set({ role })
+    .where(eq(schema.users.id, userId));
+  
+  return getUserById(userId);
 }

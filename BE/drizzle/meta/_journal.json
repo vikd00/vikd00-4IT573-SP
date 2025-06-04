@@ -8,6 +8,13 @@
       "when": 1748960073211,
       "tag": "0000_free_pride",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1749043546773,
+      "tag": "0001_dark_silver_centurion",
+      "breakpoints": true
     }
   ]
 }
