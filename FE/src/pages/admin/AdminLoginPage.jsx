@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
@@ -11,12 +11,19 @@ import {
   Alert
 } from '@mui/material';
 import { AdminPanelSettings } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { AdminContext } from '../../contexts/AdminContext';
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
-  const { loginAdmin } = useAuth();
+  const { login, isAuthenticated } = useContext(AdminContext);
   
+  // Check if already authenticated and redirect
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, navigate]);
+
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -30,20 +37,20 @@ const AdminLoginPage = () => {
       [e.target.name]: e.target.value
     });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const result = await loginAdmin(formData.username, formData.password);
+      const success = await login(formData.username, formData.password);
       
-      if (result.success) {
+      if (success) {
         navigate('/admin');
       } else {
-        setError(result.error || 'Admin login failed');
-      }    } catch (error) {
+        setError('Admin login failed - invalid credentials or insufficient privileges');
+      }
+    } catch (error) {
       setError('An error occurred during login');
       console.error('Admin login error:', error);
     } finally {

@@ -8,6 +8,15 @@ export const getAllUsers = async (token) => {
   });
 };
 
+// Admin: Create user
+export const createUser = async (userData, token) => {
+  return apiRequest('/api/admin/users', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+    token,
+  });
+};
+
 // Admin: Update user role
 export const updateUserRole = async (userId, role, token) => {
   return apiRequest(`/api/admin/users/${userId}/role`, {
