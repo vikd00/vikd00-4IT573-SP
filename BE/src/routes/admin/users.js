@@ -76,7 +76,7 @@ router.put("/:id", async (c) => {
     const userId = parseInt(c.req.param("id"));
     const updates = await c.req.json();
     
-    const user = await userController.updateUser(userId, updates);
+    const user = await userController.adminUpdateUser(userId, updates);
     return c.json(user);
   } catch (error) {
     return c.json({
@@ -107,6 +107,81 @@ router.patch("/:id/password", async (c) => {
     
     const user = await userController.adminUpdatePassword(userId, password);
     return c.json(user);
+  } catch (error) {
+    return c.json({
+      error: {
+        code: "SERVER_ERROR",
+        message: error.message,
+        details: {}
+      }
+    }, 400);
+  }
+});
+
+// Create new user
+router.post("/", async (c) => {
+  try {
+    const { username, password, email, firstName, lastName, role } = await c.req.json();
+    
+    if (!username || !password) {
+      return c.json({
+        error: {
+          code: "INVALID_INPUT",
+          message: "Username and password are required",
+          details: {}
+        }
+      }, 400);
+    }
+
+    if (password.length < 6) {
+      return c.json({
+        error: {
+          code: "INVALID_INPUT",
+          message: "Password must be at least 6 characters long",
+          details: {}
+        }
+      }, 400);
+    }
+
+    const userData = {
+      username,
+      password,
+      email,
+      firstName,
+      lastName,
+      role: role || "user"
+    };
+
+    const user = await userController.createUser(userData);
+    return c.json(user);
+  } catch (error) {
+    return c.json({
+      error: {
+        code: "SERVER_ERROR",
+        message: error.message,
+        details: {}
+      }
+    }, 400);
+  }
+});
+
+// Delete user
+router.delete("/:id", async (c) => {
+  try {
+    const userId = parseInt(c.req.param("id"));
+    
+    if (isNaN(userId)) {
+      return c.json({
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid user ID",
+          details: {}
+        }
+      }, 400);
+    }
+    
+    const result = await userController.deleteUser(userId);
+    return c.json(result);
   } catch (error) {
     return c.json({
       error: {
