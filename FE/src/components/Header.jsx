@@ -78,8 +78,7 @@ const Header = () => {
     <AppBar
       position="sticky"
       sx={{
-        background:
-          "linear-gradient(to right, #2b5876, #4e4376);",
+        background: "linear-gradient(to right, #2b5876, #4e4376);",
       }}
     >
       <Toolbar>
@@ -132,19 +131,17 @@ const Header = () => {
               >
                 <MenuItem onClick={handleProfile}>Profil</MenuItem>
                 <MenuItem onClick={handleOrders}>Objednávky</MenuItem>
-                {isAdmin() && (
-                  <>
-                    <MenuItem onClick={handleAdminOrders}>
-                      Admin Objednávky
-                    </MenuItem>
-                    <MenuItem onClick={handleAdminProducts}>
-                      Admin Produkty
-                    </MenuItem>
-                    <MenuItem onClick={handleAdminUsers}>
-                      Admin Používatelia
-                    </MenuItem>
-                  </>
-                )}
+                {isAdmin() && [
+                  <MenuItem key="admin-orders" onClick={handleAdminOrders}>
+                    Admin Objednávky
+                  </MenuItem>,
+                  <MenuItem key="admin-products" onClick={handleAdminProducts}>
+                    Admin Produkty
+                  </MenuItem>,
+                  <MenuItem key="admin-users" onClick={handleAdminUsers}>
+                    Admin Používatelia
+                  </MenuItem>,
+                ]}
                 <MenuItem onClick={handleLogout}>Odhlásiť sa</MenuItem>
               </Menu>
             </>
