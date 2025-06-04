@@ -1,5 +1,4 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -40,7 +39,6 @@ import { format } from "date-fns";
 import { sk } from "date-fns/locale";
 
 const AdminUsersPage = () => {
-  const navigate = useNavigate();
   const {
     users,
     addUser,
@@ -48,23 +46,10 @@ const AdminUsersPage = () => {
     updateUserPassword,
     deleteUser,
     toggleUserStatus,
-    isAuthenticated,
     loadUsers,
   } = useContext(AdminContext);
-  // Check authentication and redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/admin/login");
-    } else {
-      // Load users when component mounts and user is authenticated
-      loadUsers();
-    }
-  }, [isAuthenticated, navigate]); // Remove loadUsers from dependencies to avoid circular calls
 
-  // Don't render the page if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
+  // All useState hooks must come before any conditional returns
   const [open, setOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -85,6 +70,10 @@ const AdminUsersPage = () => {
     message: "",
     severity: "success",
   });
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
   const roles = [
     { value: "user", label: "Používateľ" },
     { value: "admin", label: "Administrátor" },
@@ -105,7 +94,7 @@ const AdminUsersPage = () => {
     setEditingUser(user);
     setFormData({
       username: user.username || "",
-      password: "", // Don't pre-fill password for security
+      password: "",
       firstName: user.firstName || "",
       lastName: user.lastName || "",
       email: user.email || "",
@@ -177,7 +166,6 @@ const AdminUsersPage = () => {
       role: formData.role,
     };
 
-    // Add password for new users
     if (!editingUser) {
       userData.password = formData.password;
     }
@@ -259,6 +247,7 @@ const AdminUsersPage = () => {
       [field]: value,
     }));
   };
+
   const getRoleColor = (role) => {
     switch (role) {
       case "admin":
@@ -269,6 +258,7 @@ const AdminUsersPage = () => {
         return "default";
     }
   };
+
   const getInitials = (firstName, lastName) => {
     if (firstName || lastName) {
       const first = firstName ? firstName.charAt(0).toUpperCase() : "";

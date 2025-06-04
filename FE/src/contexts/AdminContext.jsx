@@ -32,21 +32,37 @@ export const AdminProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [authToken, setAuthToken] = useState(
     localStorage.getItem("adminToken")
-  );
-  // Load data when component mounts
+  );  // Load data when component mounts
   useEffect(() => {
-    if (authToken) {
-      setIsAuthenticated(true);
-      console.log('Admin token found, loading data...');
-      loadAllData();
-    } else {
-      console.log('No admin token found');
-      setIsAuthenticated(false);
-    }
-  }, [authToken]);
+    const initializeAuth = async () => {
+      const token = localStorage.getItem("adminToken");
+      if (token) {
+        setAuthToken(token);
+        setIsAuthenticated(true);
+        console.log('Admin token found, loading data...');
+        try {
+          await loadAllData();
+        } catch (error) {
+          console.error('Error loading admin data:', error);
+          // If token is invalid, clear it
+          if (error?.response?.status === 401) {
+            localStorage.removeItem("adminToken");
+            setAuthToken(null);
+            setIsAuthenticated(false);
+          }
+        }
+      } else {
+        console.log('No admin token found');
+        setIsAuthenticated(false);
+      }
+      setIsAuthLoading(false);
+    };    initializeAuth();
+  }, []); // Only run once on mount
+
   const loadAllData = async () => {
     try {
       console.log('Loading admin data...');
@@ -54,8 +70,10 @@ export const AdminProvider = ({ children }) => {
       console.log('Admin data loaded successfully');
     } catch (error) {
       console.error("Error loading admin data:", error);
+      throw error; // Propagate error to handle token invalidation
     }
   };
+
   const loadUsers = async () => {
     try {
       console.log('Loading users with token:', authToken ? 'present' : 'missing');
@@ -264,12 +282,12 @@ export const AdminProvider = ({ children }) => {
     setOrders([]);
     setProducts([]);
   };
-  const value = {
-    // Data
+  const value = {    // Data
     products,
     orders,
     users,
     isAuthenticated,
+    isAuthLoading,
     dashboardData,
     loading,
 

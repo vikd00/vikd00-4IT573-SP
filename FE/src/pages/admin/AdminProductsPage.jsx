@@ -1,5 +1,4 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -40,30 +39,15 @@ import {
 import { AdminContext } from "../../contexts/AdminContext";
 
 const AdminProductsPage = () => {
-  const navigate = useNavigate();
   const {
     products,
     addProduct,
     updateProduct,
     deleteProduct,
-    isAuthenticated,
     loadProducts,
   } = useContext(AdminContext);
 
-  // Check authentication and redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/admin/login");
-    } else {
-      // Load products when component mounts and user is authenticated
-      loadProducts();
-    }
-  }, [isAuthenticated, navigate]); // Remove loadProducts from dependencies to avoid circular calls
-
-  // Don't render the page if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
+  // All useState hooks
   const [open, setOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
@@ -78,6 +62,11 @@ const AdminProductsPage = () => {
     message: "",
     severity: "success",
   });
+
+  // Load products when component mounts
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
   const showAlert = (message, severity = "success") => {
     setAlert({ show: true, message, severity });
@@ -103,7 +92,7 @@ const AdminProductsPage = () => {
     setFormData({
       name: product.name,
       description: product.description,
-      price: (product.price / 100).toString(), // Convert from cents
+      price: (product.price / 100).toString(), 
       inventory: product.inventory.toString(),
       imageUrl: product.imageUrl || "",
     });

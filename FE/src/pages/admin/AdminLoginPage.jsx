@@ -1,5 +1,5 @@
-import { useState, useContext, useEffect } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useState, useContext, useEffect } from "react";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -8,51 +8,52 @@ import {
   Typography,
   Box,
   Link,
-  Alert
-} from '@mui/material';
-import { AdminPanelSettings } from '@mui/icons-material';
-import { AdminContext } from '../../contexts/AdminContext';
+  Alert,
+} from "@mui/material";
+import { AdminPanelSettings } from "@mui/icons-material";
+import { AdminContext } from "../../contexts/AdminContext";
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useContext(AdminContext);
-  
+  const { login, isAuthenticated, isAuthLoading } = useContext(AdminContext);
   // Check if already authenticated and redirect
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/admin');
+    if (!isAuthLoading && isAuthenticated) {
+      navigate("/admin");
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isAuthLoading, navigate]);
 
   const [formData, setFormData] = useState({
-    username: '',
-    password: ''
+    username: "",
+    password: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const success = await login(formData.username, formData.password);
-      
+
       if (success) {
-        navigate('/admin');
+        navigate("/admin");
       } else {
-        setError('Admin login failed - invalid credentials or insufficient privileges');
+        setError(
+          "Admin login failed - invalid credentials or insufficient privileges"
+        );
       }
     } catch (error) {
-      setError('An error occurred during login');
-      console.error('Admin login error:', error);
+      setError("An error occurred during login");
+      console.error("Admin login error:", error);
     } finally {
       setLoading(false);
     }
@@ -60,16 +61,18 @@ const AdminLoginPage = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
         minHeight="80vh"
       >
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+        <Paper elevation={3} sx={{ p: 4, width: "100%" }}>
           <Box textAlign="center" mb={3}>
-            <AdminPanelSettings sx={{ fontSize: 60, color: 'error.main', mb: 2 }} />
+            <AdminPanelSettings
+              sx={{ fontSize: 60, color: "error.main", mb: 2 }}
+            />
             <Typography variant="h4" gutterBottom>
               Admin Login
             </Typography>
@@ -118,7 +121,7 @@ const AdminLoginPage = () => {
               disabled={loading}
               sx={{ mt: 3, mb: 2 }}
             >
-              {loading ? 'Signing in...' : 'Sign in as Admin'}
+              {loading ? "Signing in..." : "Sign in as Admin"}
             </Button>
 
             <Box textAlign="center">

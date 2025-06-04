@@ -9,6 +9,7 @@ import { AdminProvider } from "./contexts/AdminContext";
 
 // Components
 import Layout from "./components/Layout";
+import AdminRoute from "./components/AdminRoute";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -68,13 +69,29 @@ function App() {
 
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLoginPage />} />
-                  <Route path="/admin" element={<AdminDashboardPage />} />
+                  <Route path="/admin" element={
+                    <AdminRoute>
+                      <AdminDashboardPage />
+                    </AdminRoute>
+                  } />
                   <Route
                     path="/admin/products"
-                    element={<AdminProductsPage />}
+                    element={
+                      <AdminRoute>
+                        <AdminProductsPage />
+                      </AdminRoute>
+                    }
                   />
-                  <Route path="/admin/orders" element={<AdminOrdersPage />} />
-                  <Route path="/admin/users" element={<AdminUsersPage />} />
+                  <Route path="/admin/orders" element={
+                    <AdminRoute>
+                      <AdminOrdersPage />
+                    </AdminRoute>
+                  } />
+                  <Route path="/admin/users" element={
+                    <AdminRoute>
+                      <AdminUsersPage />
+                    </AdminRoute>
+                  } />
                 </Routes>
               </Layout>
             </Router>
