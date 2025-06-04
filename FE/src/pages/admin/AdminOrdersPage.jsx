@@ -1,4 +1,5 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -33,15 +34,17 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   LocalShipping as ShippingIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { AdminContext } from '../../contexts/AdminContext';
 import { format } from 'date-fns';
 
 const AdminOrdersPage = () => {
-  const { orders, updateOrderStatus } = useContext(AdminContext);
-  const [expandedOrder, setExpandedOrder] = useState(null);
+  const navigate = useNavigate();
+  const { orders, updateOrderStatus, deleteOrder, isAuthenticated, loadOrders } = useContext(AdminContext);  const [expandedOrder, setExpandedOrder] = useState(null);
   const [statusDialog, setStatusDialog] = useState({ open: false, order: null });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, order: null });
   const [alert, setAlert] = useState({ show: false, message: '', severity: 'success' });
 
   const statusOptions = [
@@ -59,28 +62,73 @@ const AdminOrdersPage = () => {
 
   const handleExpandClick = (orderId) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
+  };  const handleStatusChange = (orderId, newStatus) => {
+    updateOrderStatus(orderId, newStatus);
+    setAlert({
+      show: true,
+      message: `Order status updated to ${newStatus}`,
+      severity: 'success'
+    });
+    setTimeout(() => setAlert({ show: false, message: '', severity: 'success' }), 3000);
   };
 
-  const handleStatusUpdate = (order) => {
-    setStatusDialog({ open: true, order });
-  };
-
-  const handleStatusChange = (newStatus) => {
-    if (statusDialog.order) {
-      updateOrderStatus(statusDialog.order.id, newStatus);
+  const handleDeleteClick = (order) => {
+    if (order.status !== 'cancelled') {
       setAlert({
         show: true,
-        message: `Order status updated to ${newStatus}`,
-        severity: 'success'
+        message: 'Order must be cancelled before it can be deleted',
+        severity: 'error'
       });
-      setStatusDialog({ open: false, order: null });
       setTimeout(() => setAlert({ show: false, message: '', severity: 'success' }), 3000);
+      return;
     }
+    setDeleteDialog({ open: true, order });
   };
 
-  const calculateOrderTotal = (items) => {
-    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteOrder(deleteDialog.order.id);
+      setAlert({
+        show: true,
+        message: 'Order deleted successfully',
+        severity: 'success'
+      });
+      setDeleteDialog({ open: false, order: null });
+    } catch (error) {
+      setAlert({
+        show: true,
+        message: error.message || 'Failed to delete order',
+        severity: 'error'
+      });
+    }
+    setTimeout(() => setAlert({ show: false, message: '', severity: 'success' }), 3000);
   };
+
+  const formatCustomerName = (order) => {
+    if (order.firstName && order.lastName) {
+      return `${order.firstName} ${order.lastName}`;
+    } else if (order.username) {
+      return order.username;
+    }
+    return 'Unknown Customer';
+  };
+  const calculateOrderTotal = (items) => {
+    return items.reduce((total, item) => total + (item.price * item.quantity), 0) / 100; // Convert cents to dollars
+  };
+  // Check authentication and redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/admin/login');
+    } else {
+      // Load orders when component mounts and user is authenticated
+      loadOrders();
+    }
+  }, [isAuthenticated, navigate]); // Remove loadOrders from dependencies to avoid circular calls
+
+  // Don't render the page if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -120,55 +168,64 @@ const AdminOrdersPage = () => {
                     <Typography variant="subtitle2" fontWeight="medium">
                       #{order.id}
                     </Typography>
-                  </TableCell>
-                  <TableCell>
+                  </TableCell>                  <TableCell>
                     <Typography variant="body2">
-                      {order.customerName}
+                      {formatCustomerName(order)}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {order.customerEmail}
+                      {order.email || 'No email'}
                     </Typography>
-                  </TableCell>
-                  <TableCell>
+                  </TableCell><TableCell>
                     <Typography variant="body2">
-                      {format(new Date(order.date), 'MMM dd, yyyy')}
+                      {order.createdAt ? format(new Date(order.createdAt), 'MMM dd, yyyy') : 'N/A'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {format(new Date(order.date), 'HH:mm')}
+                      {order.createdAt ? format(new Date(order.createdAt), 'HH:mm') : ''}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="h6">
                       ${calculateOrderTotal(order.items).toFixed(2)}
                     </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      color={getStatusColor(order.status)}
-                      size="small"
-                    />
+                  </TableCell>                  <TableCell align="center">
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                      <Select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        displayEmpty
+                      >
+                        {statusOptions.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </TableCell>
                   <TableCell align="center">
                     <Typography variant="body2">
                       {order.items.length} item(s)
                     </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleExpandClick(order.id)}
-                      color="primary"
-                    >
-                      {expandedOrder === order.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleStatusUpdate(order)}
-                      color="secondary"
-                    >
-                      <ShippingIcon />
-                    </IconButton>
+                  </TableCell>                  <TableCell align="center">
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleExpandClick(order.id)}
+                        color="primary"
+                        title="View Details"
+                      >
+                        {expandedOrder === order.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteClick(order)}
+                        color="error"
+                        disabled={order.status !== 'cancelled'}
+                        title={order.status !== 'cancelled' ? 'Order must be cancelled to delete' : 'Delete Order'}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -178,14 +235,12 @@ const AdminOrdersPage = () => {
                         <Typography variant="h6" gutterBottom component="div">
                           Order Details
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 4, mb: 2 }}>
-                          <Box>
+                        <Box sx={{ display: 'flex', gap: 4, mb: 2 }}>                          <Box>
                             <Typography variant="subtitle2" color="text.secondary">
                               Shipping Address:
                             </Typography>
                             <Typography variant="body2">
-                              {order.shippingAddress?.street}<br />
-                              {order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}
+                              {order.shippingAddress || 'No address provided'}
                             </Typography>
                           </Box>
                           <Box>
@@ -201,14 +256,13 @@ const AdminOrdersPage = () => {
                           Items:
                         </Typography>
                         <List dense>
-                          {order.items.map((item, index) => (
-                            <ListItem key={index} divider>
+                          {order.items.map((item, index) => (                            <ListItem key={index} divider>
                               <ListItemText
                                 primary={item.name}
-                                secondary={`Quantity: ${item.quantity} × $${item.price.toFixed(2)}`}
+                                secondary={`Quantity: ${item.quantity} × $${(item.price / 100).toFixed(2)}`}
                               />
                               <Typography variant="body2" fontWeight="medium">
-                                ${(item.quantity * item.price).toFixed(2)}
+                                ${(item.quantity * item.price / 100).toFixed(2)}
                               </Typography>
                             </ListItem>
                           ))}
@@ -221,9 +275,7 @@ const AdminOrdersPage = () => {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
-
-      {/* Status Update Dialog */}
+      </TableContainer>      {/* Status Update Dialog */}
       <Dialog 
         open={statusDialog.open} 
         onClose={() => setStatusDialog({ open: false, order: null })}
@@ -259,6 +311,36 @@ const AdminOrdersPage = () => {
         <DialogActions>
           <Button onClick={() => setStatusDialog({ open: false, order: null })}>
             Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialog.open} 
+        onClose={() => setDeleteDialog({ open: false, order: null })}
+      >
+        <DialogTitle>
+          Delete Order
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Are you sure you want to delete order #{deleteDialog.order?.id}?
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            This action cannot be undone. The order will be permanently removed from the system.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, order: null })}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
