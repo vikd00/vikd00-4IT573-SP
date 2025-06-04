@@ -1,65 +1,82 @@
-import { useState, useEffect } from 'react';
-import { Container, Box } from '@mui/material';
-import OrderHistory from '../components/OrderHistory';
-import { useApi } from '../hooks/useApi';
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { Container, Box, Alert, CircularProgress } from "@mui/material";
+import OrderHistory from "../components/OrderHistory";
+import { useAuth } from "../contexts/AuthContext";
+import { getUserOrders } from "../api/orders";
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
-  const { loading, get } = useApi();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { token } = useAuth();
+  const location = useLocation();
 
-  // Mock orders data for now
+  const message = location.state?.message;
   useEffect(() => {
     const fetchOrders = async () => {
-      // TODO: Replace with actual API call
-      // const { data } = await get('/orders');
-      
-      // Mock data for development
-      const mockOrders = [
-        {
-          id: 'ORD-001',
-          createdAt: '2024-01-15T10:30:00Z',
-          status: 'delivered',
-          total: 1299.99,
-          shippingAddress: 'Bratislava, Slovensko',
-          items: [
-            { productName: 'iPhone 14 Pro', quantity: 1, price: 1199.99 },
-            { productName: 'Ochranné sklo', quantity: 1, price: 29.99 },
-            { productName: 'Doprava', quantity: 1, price: 5.00 }
-          ]
-        },
-        {
-          id: 'ORD-002',
-          createdAt: '2024-01-20T14:15:00Z',
-          status: 'processing',
-          total: 649.99,
-          shippingAddress: 'Praha, Česká republika',
-          items: [
-            { productName: 'iPad Air', quantity: 1, price: 649.99 }
-          ]
-        },
-        {
-          id: 'ORD-003',
-          createdAt: '2024-01-25T09:45:00Z',
-          status: 'pending',
-          total: 284.99,
-          shippingAddress: 'Košice, Slovensko',
-          items: [
-            { productName: 'AirPods Pro', quantity: 1, price: 279.99 },
-            { productName: 'Doprava', quantity: 1, price: 5.00 }
-          ]
-        }
-      ];
-      
-      setOrders(mockOrders);
-    };
+      if (!token) return;
 
-    fetchOrders();
-  }, []);
+      try {
+        setLoading(true);
+        setError(null);
+
+        const ordersWithDetails = await getUserOrders(token);
+
+        if (!ordersWithDetails || !Array.isArray(ordersWithDetails)) {
+          throw new Error("Nepodarilo sa načítať objednávky");
+        }
+
+        const formattedOrders = ordersWithDetails.map((order) => {
+          const items = Array.isArray(order.items) ? order.items : [];
+
+          return {
+            id: order.id,
+            createdAt: order.createdAt,
+            status: order.status || "pending",
+            total: order.totalPrice ? order.totalPrice / 100 : 0,
+            shippingAddress: order.shippingAddress,
+            items: items.map((item) => ({
+              productName: item.name || "Produkt",
+              quantity: item.quantity || 1,
+              price: item.price / 100,
+            })),
+          };
+        });
+
+        setOrders(formattedOrders);
+        console.log(formattedOrders);
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        setError("Chyba pri načítaní objednávok");
+      } finally {
+        setLoading(false);
+      }
+    };    fetchOrders();
+  }, [token]);
 
   return (
     <Container maxWidth="lg">
       <Box py={4}>
-        <OrderHistory orders={orders} loading={loading} />
+        {message && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            {message}
+          </Alert>
+        )}
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <OrderHistory orders={orders} loading={false} />
+        )}
       </Box>
     </Container>
   );
