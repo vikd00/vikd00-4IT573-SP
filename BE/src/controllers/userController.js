@@ -173,3 +173,15 @@ export async function updateUserRole(userId, role) {
   
   return getUserById(userId);
 }
+
+// Admin function to update user password without knowing current password
+export async function adminUpdatePassword(userId, newPassword) {
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  
+  await db
+    .update(schema.users)
+    .set({ passwordHash })
+    .where(eq(schema.users.id, userId));
+  
+  return getUserById(userId);
+}

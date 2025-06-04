@@ -70,4 +70,52 @@ router.patch("/:id/role", async (c) => {
   }
 });
 
+// Update user information (admin can edit any user)
+router.put("/:id", async (c) => {
+  try {
+    const userId = parseInt(c.req.param("id"));
+    const updates = await c.req.json();
+    
+    const user = await userController.updateUser(userId, updates);
+    return c.json(user);
+  } catch (error) {
+    return c.json({
+      error: {
+        code: "SERVER_ERROR",
+        message: error.message,
+        details: {}
+      }
+    }, 400);
+  }
+});
+
+// Admin password reset (without knowing current password)
+router.patch("/:id/password", async (c) => {
+  try {
+    const userId = parseInt(c.req.param("id"));
+    const { password } = await c.req.json();
+    
+    if (!password || password.length < 6) {
+      return c.json({
+        error: {
+          code: "INVALID_INPUT",
+          message: "Password must be at least 6 characters long",
+          details: {}
+        }
+      }, 400);
+    }
+    
+    const user = await userController.adminUpdatePassword(userId, password);
+    return c.json(user);
+  } catch (error) {
+    return c.json({
+      error: {
+        code: "SERVER_ERROR",
+        message: error.message,
+        details: {}
+      }
+    }, 400);
+  }
+});
+
 export default router;
