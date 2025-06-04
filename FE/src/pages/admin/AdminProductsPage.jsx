@@ -1,4 +1,5 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -22,41 +23,77 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert
-} from '@mui/material';
+  Alert,
+  Switch,
+  Avatar,
+  Tooltip,
+  Stack,
+} from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
-  Visibility as ViewIcon
-} from '@mui/icons-material';
-import { AdminContext } from '../../contexts/AdminContext';
+  VisibilityOff as DisableIcon,
+  Visibility as EnableIcon,
+  Image as ImageIcon,
+} from "@mui/icons-material";
+import { AdminContext } from "../../contexts/AdminContext";
 
 const AdminProductsPage = () => {
-  const { products, addProduct, updateProduct, deleteProduct } = useContext(AdminContext);
+  const navigate = useNavigate();
+  const {
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    isAuthenticated,
+    loadProducts,
+  } = useContext(AdminContext);
+
+  // Check authentication and redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/admin/login");
+    } else {
+      // Load products when component mounts and user is authenticated
+      loadProducts();
+    }
+  }, [isAuthenticated, navigate]); // Remove loadProducts from dependencies to avoid circular calls
+
+  // Don't render the page if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
   const [open, setOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    stock: '',
-    image: ''
+    name: "",
+    description: "",
+    price: "",
+    inventory: "",
+    imageUrl: "",
   });
-  const [alert, setAlert] = useState({ show: false, message: '', severity: 'success' });
+  const [alert, setAlert] = useState({
+    show: false,
+    message: "",
+    severity: "success",
+  });
 
-  const categories = ['Electronics', 'Clothing', 'Books', 'Home & Garden', 'Sports', 'Other'];
-
+  const showAlert = (message, severity = "success") => {
+    setAlert({ show: true, message, severity });
+    setTimeout(
+      () => setAlert({ show: false, message: "", severity: "success" }),
+      3000
+    );
+  };
   const handleAdd = () => {
     setEditingProduct(null);
     setFormData({
-      name: '',
-      description: '',
-      price: '',
-      category: '',
-      stock: '',
-      image: ''
+      name: "",
+      description: "",
+      price: "",
+      inventory: "",
+      imageUrl: "",
     });
     setOpen(true);
   };
@@ -66,237 +103,303 @@ const AdminProductsPage = () => {
     setFormData({
       name: product.name,
       description: product.description,
-      price: product.price.toString(),
-      category: product.category,
-      stock: product.stock.toString(),
-      image: product.image || ''
+      price: (product.price / 100).toString(), // Convert from cents
+      inventory: product.inventory.toString(),
+      imageUrl: product.imageUrl || "",
     });
     setOpen(true);
   };
 
-  const handleDelete = (productId) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      deleteProduct(productId);
-      setAlert({
-        show: true,
-        message: 'Product deleted successfully',
-        severity: 'success'
-      });
-      setTimeout(() => setAlert({ show: false, message: '', severity: 'success' }), 3000);
+  const handleDelete = async (productId) => {
+    if (window.confirm("Naozaj chcete vymazať tento produkt?")) {
+      try {
+        await deleteProduct(productId);
+        showAlert("Produkt bol úspešne vymazaný");
+      } catch (error) {
+        showAlert("Chyba pri mazaní produktu", "error");
+      }
     }
   };
 
-  const handleSubmit = () => {
-    const productData = {
-      ...formData,
-      price: parseFloat(formData.price),
-      stock: parseInt(formData.stock)
-    };
-
-    if (editingProduct) {
-      updateProduct(editingProduct.id, productData);
-      setAlert({
-        show: true,
-        message: 'Product updated successfully',
-        severity: 'success'
+  const handleToggleActive = async (product) => {
+    try {
+      await updateProduct(product.id, {
+        ...product,
+        active: !product.active,
+        price: product.price, // Keep price in cents for backend
       });
-    } else {
-      addProduct(productData);
-      setAlert({
-        show: true,
-        message: 'Product added successfully',
-        severity: 'success'
-      });
+      showAlert(
+        `Produkt bol ${!product.active ? "aktivovaný" : "deaktivovaný"}`
+      );
+    } catch (error) {
+      showAlert("Chyba pri zmene stavu produktu", "error");
     }
+  };
 
-    setOpen(false);
-    setTimeout(() => setAlert({ show: false, message: '', severity: 'success' }), 3000);
+  const handleSubmit = async () => {
+    try {
+      const productData = {
+        name: formData.name,
+        description: formData.description,
+        price: Math.round(parseFloat(formData.price) * 100), // Convert to cents
+        inventory: parseInt(formData.inventory),
+        imageUrl: formData.imageUrl,
+      };
+
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, productData);
+        showAlert("Produkt bol úspešne aktualizovaný");
+      } else {
+        await addProduct(productData);
+        showAlert("Produkt bol úspešne pridaný");
+      }
+
+      setOpen(false);
+    } catch (error) {
+      showAlert(
+        `Chyba pri ${editingProduct ? "aktualizácii" : "pridávaní"} produktu`,
+        "error"
+      );
+    }
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const getStockColor = (stock) => {
-    if (stock === 0) return 'error';
-    if (stock < 10) return 'warning';
-    return 'success';
+    if (stock === 0) return "error";
+    if (stock < 10) return "warning";
+    return "success";
   };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("sk-SK", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       {alert.show && (
         <Alert severity={alert.severity} sx={{ mb: 2 }}>
           {alert.message}
         </Alert>
       )}
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
         <Typography variant="h4" component="h1">
-          Product Management
+          Správa produktov
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-        >
-          Add Product
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
+          Pridať produkt
         </Button>
       </Box>
-
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Image</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell align="right">Price</TableCell>
-              <TableCell align="center">Stock</TableCell>
-              <TableCell align="center">Actions</TableCell>
+              <TableCell>ID</TableCell>
+              <TableCell>Obrázok</TableCell>
+              <TableCell>Názov</TableCell>
+              <TableCell>Popis</TableCell>
+              <TableCell align="right">Cena (€)</TableCell>
+              <TableCell align="center">Sklad</TableCell>
+              <TableCell align="center">Aktívny</TableCell>
+              <TableCell>Vytvorené</TableCell>
+              <TableCell align="center">Akcie</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {products.map((product) => (
               <TableRow key={product.id}>
                 <TableCell>
-                  <Box
-                    component="img"
-                    sx={{
-                      width: 50,
-                      height: 50,
-                      objectFit: 'cover',
-                      borderRadius: 1
-                    }}
-                    src={product.image || '/api/placeholder/50/50'}
-                    alt={product.name}
-                  />
+                  <Typography variant="body2" fontWeight="medium">
+                    #{product.id}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  {product.imageUrl ? (
+                    <Avatar
+                      src={product.imageUrl}
+                      alt={product.name}
+                      sx={{ width: 50, height: 50 }}
+                      variant="rounded"
+                    />
+                  ) : (
+                    <Avatar
+                      sx={{ width: 50, height: 50, bgcolor: "grey.300" }}
+                      variant="rounded"
+                    >
+                      <ImageIcon />
+                    </Avatar>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Typography variant="subtitle1" fontWeight="medium">
                     {product.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" noWrap>
+                </TableCell>
+                <TableCell>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      maxWidth: 200,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {product.description}
                   </Typography>
                 </TableCell>
-                <TableCell>
-                  <Chip label={product.category} size="small" />
-                </TableCell>
                 <TableCell align="right">
                   <Typography variant="h6">
-                    ${product.price.toFixed(2)}
+                    {(product.price / 100).toFixed(2)} €
                   </Typography>
-                </TableCell>
+                </TableCell>{" "}
                 <TableCell align="center">
                   <Chip
-                    label={product.stock}
-                    color={getStockColor(product.stock)}
+                    label={product.inventory}
+                    color={getStockColor(product.inventory)}
                     size="small"
                   />
                 </TableCell>
                 <TableCell align="center">
-                  <IconButton
+                  <Chip
+                    label={product.active ? "Aktívny" : "Neaktívny"}
+                    color={product.active ? "success" : "error"}
                     size="small"
-                    onClick={() => handleEdit(product)}
-                    color="primary"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDelete(product.id)}
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDate(product.createdAt)}
+                  </Typography>
+                </TableCell>
+                <TableCell align="center">
+                  <Stack direction="row" spacing={1}>
+                    {" "}
+                    <Tooltip title="Upraviť">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEdit(product)}
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip
+                      title={product.active ? "Deaktivovať" : "Aktivovať"}
+                    >
+                      <IconButton
+                        size="small"
+                        onClick={() => handleToggleActive(product)}
+                        color={product.active ? "warning" : "success"}
+                      >
+                        {product.active ? <DisableIcon /> : <EnableIcon />}
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Vymazať">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(product.id)}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
-
+      </TableContainer>{" "}
       {/* Add/Edit Product Dialog */}
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
-          {editingProduct ? 'Edit Product' : 'Add New Product'}
+          {editingProduct ? "Upraviť produkt" : "Pridať nový produkt"}
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
             <TextField
-              label="Product Name"
+              label="Názov produktu"
               value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
+              onChange={(e) => handleInputChange("name", e.target.value)}
               fullWidth
               required
             />
             <TextField
-              label="Description"
+              label="Popis"
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={(e) => handleInputChange("description", e.target.value)}
               fullWidth
               multiline
               rows={3}
               required
             />
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
               <TextField
-                label="Price"
+                label="Cena (€)"
                 type="number"
                 value={formData.price}
-                onChange={(e) => handleInputChange('price', e.target.value)}
+                onChange={(e) => handleInputChange("price", e.target.value)}
                 inputProps={{ min: 0, step: 0.01 }}
                 required
                 sx={{ flex: 1 }}
               />
               <TextField
-                label="Stock"
+                label="Počet kusov na sklade"
                 type="number"
-                value={formData.stock}
-                onChange={(e) => handleInputChange('stock', e.target.value)}
+                value={formData.inventory}
+                onChange={(e) => handleInputChange("inventory", e.target.value)}
                 inputProps={{ min: 0 }}
                 required
                 sx={{ flex: 1 }}
               />
             </Box>
-            <FormControl fullWidth required>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={formData.category}
-                label="Category"
-                onChange={(e) => handleInputChange('category', e.target.value)}
-              >
-                {categories.map((category) => (
-                  <MenuItem key={category} value={category}>
-                    {category}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
             <TextField
-              label="Image URL"
-              value={formData.image}
-              onChange={(e) => handleInputChange('image', e.target.value)}
+              label="URL obrázka"
+              value={formData.imageUrl}
+              onChange={(e) => handleInputChange("imageUrl", e.target.value)}
               fullWidth
-              placeholder="https://example.com/image.jpg"
+              placeholder="https://example.com/obrazok.jpg"
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button onClick={() => setOpen(false)}>Zrušiť</Button>
+          <Button
+            onClick={handleSubmit}
             variant="contained"
-            disabled={!formData.name || !formData.description || !formData.price || !formData.category || !formData.stock}
+            disabled={
+              !formData.name ||
+              !formData.description ||
+              !formData.price ||
+              !formData.inventory
+            }
           >
-            {editingProduct ? 'Update' : 'Add'} Product
-          </Button>
+            {editingProduct ? "Aktualizovať" : "Pridať"} produkt
+          </Button>{" "}
         </DialogActions>
       </Dialog>
     </Container>
