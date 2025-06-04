@@ -19,11 +19,13 @@ const Layout = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          py: 3,
+          pb: 3,
         }}
       >
         {children && (
-          <Container maxWidth="lg">
+          <Container
+            maxWidth="lg"
+          >
             {children}
           </Container>
         )}

@@ -151,7 +151,7 @@ const ProductList = ({
     <Box>
       {/* Title */}
       {title && (
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
           {title}
         </Typography>
       )}
@@ -169,9 +169,10 @@ const ProductList = ({
           <Grid container spacing={2} alignItems="center">
             {/* Search Bar */}
             {showSearch && (
-              <Grid item xs={12} md={showFilters ? 8 : 12}>
+              <Grid item size={{ xs: 12, md: showFilters ? 8 : 12 }}>
                 <TextField
                   fullWidth
+									size="small"
                   placeholder="Hľadať produkty..."
                   value={searchTerm}
                   onChange={handleSearch}
@@ -195,7 +196,7 @@ const ProductList = ({
 
             {/* Sort Filters */}
             {showFilters && (
-              <Grid item xs={12} md={showSearch ? 4 : 12}>
+              <Grid item size={{ xs: 12, md: showSearch ? 4 : 12 }}>
                 <Box display="flex" justifyContent="flex-end">
                   <ToggleButtonGroup
                     value={sortOrder}
@@ -245,7 +246,7 @@ const ProductList = ({
       ) : (
         <Grid container spacing={3}>
           {processedProducts.map((product) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+            <Grid item size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={product.id}>
               <Card
                 sx={{
                   height: "100%",
@@ -305,19 +306,19 @@ const ProductList = ({
                     />
                   </Box>
                 </CardContent>
-                <CardActions sx={{ p: 2, pt: 0 }}>
+                <Box sx={{ p: 2, pt: 0, display: "flex", flexDirection: "column" }}>
                   <Button
                     fullWidth
                     variant="outlined"
                     startIcon={<Visibility />}
                     onClick={() => handleViewProduct(product.id)}
-                    sx={{ mr: 1 }}
                   >
                     Zobraziť
                   </Button>
 
                   <Button
                     fullWidth
+										sx={{ mt: 1 }}
                     variant="contained"
                     startIcon={<AddShoppingCart />}
                     onClick={() => handleAddToCart(product)}
@@ -325,7 +326,7 @@ const ProductList = ({
                   >
                     Do košíka
                   </Button>
-                </CardActions>{" "}
+                </Box>
               </Card>
             </Grid>
           ))}

@@ -69,14 +69,14 @@ const HomePage = () => {
       </Box>
 
       {/* Výhody sekcia */}
-      <Box sx={{ py: 6, backgroundColor: "grey.50" }}>
+      <Box sx={{ py: 6, backgroundColor: "grey.200" }}>
         <Container maxWidth="lg">
           <Typography variant="h4" textAlign="center" gutterBottom>
             Prečo si vybrať nás?
           </Typography>
 
           <Grid container spacing={4} sx={{ mt: 2 }}>
-            <Grid item xs={12} md={4}>
+            <Grid item size={{ xs: 12, md: 4 }}>
               <Card sx={{ textAlign: "center", height: "100%" }}>
                 <CardContent>
                   <Store color="primary" sx={{ fontSize: 60, mb: 2 }} />
@@ -90,7 +90,7 @@ const HomePage = () => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid item size={{ xs: 12, md: 4 }}>
               <Card sx={{ textAlign: "center", height: "100%" }}>
                 <CardContent>
                   <ShoppingCart color="primary" sx={{ fontSize: 60, mb: 2 }} />
@@ -104,7 +104,7 @@ const HomePage = () => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid item size={{ xs: 12, md: 4 }}>
               <Card sx={{ textAlign: "center", height: "100%" }}>
                 <CardContent>
                   <Security color="primary" sx={{ fontSize: 60, mb: 2 }} />
