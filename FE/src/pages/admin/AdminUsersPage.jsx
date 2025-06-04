@@ -1,4 +1,5 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -24,129 +25,257 @@ import {
   MenuItem,
   Alert,
   Avatar,
-  Switch,
-  FormControlLabel
-} from '@mui/material';
+  Tooltip,
+} from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Add as AddIcon,
+  PersonAdd as PersonAddIcon,
   Block as BlockIcon,
   CheckCircle as ActiveIcon,
-  PersonAdd as PersonAddIcon
-} from '@mui/icons-material';
-import { AdminContext } from '../../contexts/AdminContext';
-import { format } from 'date-fns';
+  Lock as LockIcon,
+} from "@mui/icons-material";
+import { AdminContext } from "../../contexts/AdminContext";
+import { format } from "date-fns";
+import { sk } from "date-fns/locale";
 
 const AdminUsersPage = () => {
-  const { users, addUser, updateUser, deleteUser, toggleUserStatus } = useContext(AdminContext);
+  const navigate = useNavigate();
+  const {
+    users,
+    addUser,
+    updateUser,
+    updateUserPassword,
+    deleteUser,
+    toggleUserStatus,
+    isAuthenticated,
+    loadUsers,
+  } = useContext(AdminContext);
+  // Check authentication and redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/admin/login");
+    } else {
+      // Load users when component mounts and user is authenticated
+      loadUsers();
+    }
+  }, [isAuthenticated, navigate]); // Remove loadUsers from dependencies to avoid circular calls
+
+  // Don't render the page if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
   const [open, setOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [passwordUser, setPasswordUser] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [newPassword, setNewPassword] = useState("");
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    role: 'customer',
-    isActive: true
+    username: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    role: "user",
   });
-  const [alert, setAlert] = useState({ show: false, message: '', severity: 'success' });
-
+  const [alert, setAlert] = useState({
+    show: false,
+    message: "",
+    severity: "success",
+  });
   const roles = [
-    { value: 'customer', label: 'Customer' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'manager', label: 'Manager' }
+    { value: "user", label: "Používateľ" },
+    { value: "admin", label: "Administrátor" },
   ];
-
   const handleAdd = () => {
     setEditingUser(null);
     setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      role: 'customer',
-      isActive: true
+      username: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      role: "user",
     });
     setOpen(true);
   };
-
   const handleEdit = (user) => {
     setEditingUser(user);
     setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive
+      username: user.username || "",
+      password: "", // Don't pre-fill password for security
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || "",
+      role: user.role || "user",
     });
     setOpen(true);
   };
 
-  const handleDelete = (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      deleteUser(userId);
-      setAlert({
-        show: true,
-        message: 'User deleted successfully',
-        severity: 'success'
-      });
-      setTimeout(() => setAlert({ show: false, message: '', severity: 'success' }), 3000);
+  const handlePasswordChange = (user) => {
+    setPasswordUser(user);
+    setNewPassword("");
+    setPasswordDialogOpen(true);
+  };
+  const handleDelete = (user) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+  const confirmDelete = async () => {
+    if (userToDelete) {
+      try {
+        await deleteUser(userToDelete.id);
+        setAlert({
+          show: true,
+          message: "Používateľ bol úspešne vymazaný",
+          severity: "success",
+        });
+        setTimeout(
+          () => setAlert({ show: false, message: "", severity: "success" }),
+          3000
+        );
+      } catch (error) {
+        setAlert({
+          show: true,
+          message: "Chyba pri vymazávaní používateľa",
+          severity: "error",
+        });
+        setTimeout(
+          () => setAlert({ show: false, message: "", severity: "error" }),
+          3000
+        );
+      }
     }
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
   };
 
   const handleToggleStatus = (userId) => {
     toggleUserStatus(userId);
     setAlert({
       show: true,
-      message: 'User status updated successfully',
-      severity: 'success'
+      message: "Stav používateľa bol úspešne aktualizovaný",
+      severity: "success",
     });
-    setTimeout(() => setAlert({ show: false, message: '', severity: 'success' }), 3000);
+    setTimeout(
+      () => setAlert({ show: false, message: "", severity: "success" }),
+      3000
+    );
   };
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const userData = {
-      ...formData,
-      joinDate: editingUser ? editingUser.joinDate : new Date().toISOString()
+      username: formData.username,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      role: formData.role,
     };
 
-    if (editingUser) {
-      updateUser(editingUser.id, userData);
-      setAlert({
-        show: true,
-        message: 'User updated successfully',
-        severity: 'success'
-      });
-    } else {
-      addUser(userData);
-      setAlert({
-        show: true,
-        message: 'User added successfully',
-        severity: 'success'
-      });
+    // Add password for new users
+    if (!editingUser) {
+      userData.password = formData.password;
     }
 
-    setOpen(false);
-    setTimeout(() => setAlert({ show: false, message: '', severity: 'success' }), 3000);
+    try {
+      if (editingUser) {
+        await updateUser(editingUser.id, userData);
+        setAlert({
+          show: true,
+          message: "Používateľ bol úspešne aktualizovaný",
+          severity: "success",
+        });
+      } else {
+        await addUser(userData);
+        setAlert({
+          show: true,
+          message: "Používateľ bol úspešne pridaný",
+          severity: "success",
+        });
+      }
+
+      setOpen(false);
+      setTimeout(
+        () => setAlert({ show: false, message: "", severity: "success" }),
+        3000
+      );
+    } catch (error) {
+      setAlert({
+        show: true,
+        message: error.message || "Nastala chyba",
+        severity: "error",
+      });
+      setTimeout(
+        () => setAlert({ show: false, message: "", severity: "success" }),
+        3000
+      );
+    }
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      setAlert({
+        show: true,
+        message: "Heslo musí mať aspoň 6 znakov",
+        severity: "error",
+      });
+      return;
+    }
+
+    try {
+      await updateUserPassword(passwordUser.id, newPassword);
+      setAlert({
+        show: true,
+        message: "Heslo bolo úspešne zmenené",
+        severity: "success",
+      });
+      setPasswordDialogOpen(false);
+      setNewPassword("");
+      setTimeout(
+        () => setAlert({ show: false, message: "", severity: "success" }),
+        3000
+      );
+    } catch (error) {
+      setAlert({
+        show: true,
+        message: error.message || "Nastala chyba pri zmene hesla",
+        severity: "error",
+      });
+      setTimeout(
+        () => setAlert({ show: false, message: "", severity: "error" }),
+        3000
+      );
+    }
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
-
   const getRoleColor = (role) => {
     switch (role) {
-      case 'admin': return 'error';
-      case 'manager': return 'warning';
-      case 'customer': return 'primary';
-      default: return 'default';
+      case "admin":
+        return "error";
+      case "user":
+        return "primary";
+      default:
+        return "default";
     }
   };
-
   const getInitials = (firstName, lastName) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    if (firstName || lastName) {
+      const first = firstName ? firstName.charAt(0).toUpperCase() : "";
+      const last = lastName ? lastName.charAt(0).toUpperCase() : "";
+      return first + last;
+    }
+    return "??";
   };
 
   return (
@@ -156,152 +285,216 @@ const AdminUsersPage = () => {
           {alert.message}
         </Alert>
       )}
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
+        {" "}
         <Typography variant="h4" component="h1">
-          User Management
+          Správa používateľov
         </Typography>
         <Button
           variant="contained"
           startIcon={<PersonAddIcon />}
           onClick={handleAdd}
         >
-          Add User
+          Pridať používateľa
         </Button>
       </Box>
-
       <TableContainer component={Paper}>
         <Table>
+          {" "}
           <TableHead>
             <TableRow>
-              <TableCell>User</TableCell>
+              <TableCell>Používateľ</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Role</TableCell>
-              <TableCell>Join Date</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell align="center">Actions</TableCell>
+              <TableCell>Rola</TableCell>
+              <TableCell>Dátum registrácie</TableCell>
+              <TableCell align="center">Stav</TableCell>
+              <TableCell align="center">Akcie</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {users.map((user) => (
               <TableRow key={user.id}>
+                {" "}
                 <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <Avatar sx={{ width: 40, height: 40 }}>
                       {getInitials(user.firstName, user.lastName)}
                     </Avatar>
                     <Box>
                       <Typography variant="subtitle1" fontWeight="medium">
-                        {user.firstName} {user.lastName}
+                        {user.firstName && user.lastName
+                          ? `${user.firstName} ${user.lastName}`
+                          : user.username}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        ID: {user.id}
+                        @{user.username}
                       </Typography>
                     </Box>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">
-                    {user.email}
-                  </Typography>
-                </TableCell>
+                  <Typography variant="body2">{user.email}</Typography>
+                </TableCell>{" "}
                 <TableCell>
                   <Chip
-                    label={user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    label={
+                      user.role === "admin" ? "Administrátor" : "Používateľ"
+                    }
                     color={getRoleColor(user.role)}
                     size="small"
                   />
-                </TableCell>
+                </TableCell>{" "}
                 <TableCell>
                   <Typography variant="body2">
-                    {format(new Date(user.joinDate), 'MMM dd, yyyy')}
+                    {user.createdAt
+                      ? format(new Date(user.createdAt), "dd.MM.yyyy", {
+                          locale: sk,
+                        })
+                      : "Neznámy"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {user.createdAt
+                      ? format(new Date(user.createdAt), "HH:mm", {
+                          locale: sk,
+                        })
+                      : ""}
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                    {user.isActive ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    {" "}
+                    {user.active ? (
                       <Chip
                         icon={<ActiveIcon />}
-                        label="Active"
+                        label="Aktívny"
                         color="success"
                         size="small"
                       />
                     ) : (
                       <Chip
                         icon={<BlockIcon />}
-                        label="Inactive"
+                        label="Neaktívny"
                         color="error"
                         size="small"
                       />
                     )}
                   </Box>
-                </TableCell>
+                </TableCell>{" "}
                 <TableCell align="center">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEdit(user)}
-                    color="primary"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleToggleStatus(user.id)}
-                    color={user.isActive ? 'warning' : 'success'}
-                  >
-                    {user.isActive ? <BlockIcon /> : <ActiveIcon />}
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDelete(user.id)}
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <Tooltip title="Upraviť používateľa">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEdit(user)}
+                      color="primary"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Zmeniť heslo">
+                    <IconButton
+                      size="small"
+                      onClick={() => handlePasswordChange(user)}
+                      color="secondary"
+                    >
+                      <LockIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={user.active ? "Deaktivovať" : "Aktivovať"}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleToggleStatus(user.id)}
+                      color={user.active ? "warning" : "success"}
+                    >
+                      {user.active ? <BlockIcon /> : <ActiveIcon />}
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Vymazať používateľa">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDelete(user)}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
-
+      </TableContainer>{" "}
       {/* Add/Edit User Dialog */}
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
-          {editingUser ? 'Edit User' : 'Add New User'}
-        </DialogTitle>
+          {editingUser ? "Upraviť používateľa" : "Pridať nového používateľa"}
+        </DialogTitle>{" "}
         <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              label="Používateľské meno"
+              value={formData?.username}
+              onChange={(e) => handleInputChange("username", e.target.value)}
+              fullWidth
+              required
+              disabled={editingUser} // Disable for editing existing users
+            />
+            {!editingUser && (
               <TextField
-                label="First Name"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                label="Heslo"
+                type="password"
+                value={formData?.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 fullWidth
                 required
+                helperText="Heslo musí mať aspoň 6 znakov"
+              />
+            )}
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <TextField
+                label="Meno"
+                value={formData?.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                fullWidth
               />
               <TextField
-                label="Last Name"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                label="Priezvisko"
+                value={formData?.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
                 fullWidth
-                required
               />
             </Box>
             <TextField
               label="Email"
               type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
+              value={formData?.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
               fullWidth
-              required
             />
             <FormControl fullWidth required>
-              <InputLabel>Role</InputLabel>
+              <InputLabel>Rola</InputLabel>
               <Select
                 value={formData.role}
-                label="Role"
-                onChange={(e) => handleInputChange('role', e.target.value)}
+                label="Rola"
+                onChange={(e) => handleInputChange("role", e.target.value)}
               >
                 {roles.map((role) => (
                   <MenuItem key={role.value} value={role.value}>
@@ -310,27 +503,87 @@ const AdminUsersPage = () => {
                 ))}
               </Select>
             </FormControl>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isActive}
-                  onChange={(e) => handleInputChange('isActive', e.target.checked)}
-                />
-              }
-              label="Active User"
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Zrušiť</Button>{" "}
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={
+              !formData.username ||
+              formData.username.trim() === "" ||
+              (!editingUser &&
+                (!formData.password || formData.password.length < 6))
+            }
+          >
+            {editingUser ? "Aktualizovať" : "Pridať"} používateľa
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Password Change Dialog */}
+      <Dialog
+        open={passwordDialogOpen}
+        onClose={() => setPasswordDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Zmeniť heslo používateľa</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Mením heslo pre: {passwordUser?.firstName}{" "}
+              {passwordUser?.lastName} ({passwordUser?.email})
+            </Typography>
+            <TextField
+              label="Nové heslo"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              fullWidth
+              required
+              helperText="Heslo musí mať aspoň 6 znakov"
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button onClick={() => setPasswordDialogOpen(false)}>Zrušiť</Button>
+          <Button
+            onClick={handlePasswordSubmit}
             variant="contained"
-            disabled={!formData.firstName || !formData.lastName || !formData.email}
+            disabled={!newPassword || newPassword.length < 6}
           >
-            {editingUser ? 'Update' : 'Add'} User
+            Zmeniť heslo
+          </Button>
+        </DialogActions>{" "}
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={cancelDelete}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Potvrdenie vymazania používateľa
+        </DialogTitle>
+        <DialogContent>
+          <Typography id="delete-dialog-description">
+            Naozaj chcete vymazať používateľa{" "}
+            <strong>
+              {userToDelete?.firstName && userToDelete?.lastName
+                ? `${userToDelete.firstName} ${userToDelete.lastName}`
+                : userToDelete?.username || "Neznámy používateľ"}
+            </strong>
+            ? Táto akcia sa nedá vrátiť späť.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete} color="primary">
+            Zrušiť
+          </Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Vymazať
           </Button>
         </DialogActions>
       </Dialog>
