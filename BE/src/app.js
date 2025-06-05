@@ -13,18 +13,22 @@ import adminProductsRouter from "./routes/admin/products.js";
 import adminOrdersRouter from "./routes/admin/orders.js";
 import adminUsersRouter from "./routes/admin/users.js";
 
-// Import WebSocket setup
+import { createNodeWebSocket } from "@hono/node-ws";
 import { createWebSocketHandler } from "./websocket/wsServer.js";
 
 export const app = new Hono();
+
+export const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({
+  app,
+});
+
+// Register WebSocket handler for /ws endpoint
+app.use('/ws', createWebSocketHandler());
 
 // Middleware
 app.use(logger());
 app.use(cors());
 app.use("/public", serveStatic({ root: "public" }));
-
-// WebSocket endpoint
-app.get("/ws", createWebSocketHandler());
 
 // API Routes
 app.route("/api/users", usersRouter);

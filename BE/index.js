@@ -1,6 +1,5 @@
 import { serve } from '@hono/node-server';
-import { app } from './src/app.js';
-import { injectWebSocket } from './src/websocket/wsServer.js';
+import { app, injectWebSocket } from './src/app.js';
 import { runMigrations } from './src/config/database.js';
 
 const port = process.env.PORT || 3003;
@@ -20,7 +19,7 @@ const server = serve({
   port
 });
 
-// Inject WebSocket support
+// Inject WebSocket support with baseUrl configuration
 injectWebSocket(server);
 
 console.log(`Server running on http://localhost:${port}`);
