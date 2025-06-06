@@ -4,9 +4,14 @@ import * as schema from "../models/schema.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-// User operations
-export async function createUser({ username, password, email, firstName, lastName, role = "user" }) {
-  // Check if username already exists
+export async function createUser({
+  username,
+  password,
+  email,
+  firstName,
+  lastName,
+  role = "user",
+}) {
   const existingUser = await db
     .select()
     .from(schema.users)
@@ -17,10 +22,8 @@ export async function createUser({ username, password, email, firstName, lastNam
     throw new Error("Username already exists");
   }
 
-  // Hash password
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // Insert user
   const result = await db.insert(schema.users).values({
     username,
     passwordHash,
@@ -34,7 +37,6 @@ export async function createUser({ username, password, email, firstName, lastNam
 }
 
 export async function loginUser({ username, password }) {
-  // Find user by username
   const user = await db
     .select()
     .from(schema.users)
@@ -45,23 +47,21 @@ export async function loginUser({ username, password }) {
     throw new Error("Invalid credentials");
   }
 
-  // Check if user is active
   if (!user.active) {
     throw new Error("Account is deactivated. Please contact support.");
   }
 
-  // Check password
   const passwordMatch = await bcrypt.compare(password, user.passwordHash);
   if (!passwordMatch) {
     throw new Error("Invalid credentials");
   }
 
-  // Generate JWT token
   const token = jwt.sign(
     { userId: user.id, role: user.role },
     process.env.JWT_SECRET || "your-secret-key",
     { expiresIn: "24h" }
   );
+
   return {
     token,
     user: {
@@ -100,12 +100,9 @@ export async function getUserById(id) {
 }
 
 export async function updateUser(id, updates) {
-  // Don't allow updating role through this function
   delete updates.role;
 
-  // Handle password change if provided
   if (updates.password) {
-    // If changing password, verify current password first
     if (updates.currentPassword) {
       const user = await db
         .select()
@@ -117,14 +114,15 @@ export async function updateUser(id, updates) {
         throw new Error("User not found");
       }
 
-      // Verify current password
-      const passwordMatch = await bcrypt.compare(updates.currentPassword, user.passwordHash);
+      const passwordMatch = await bcrypt.compare(
+        updates.currentPassword,
+        user.passwordHash
+      );
       if (!passwordMatch) {
         throw new Error("Current password is incorrect");
       }
     }
 
-    // Hash new password
     updates.passwordHash = await bcrypt.hash(updates.password, 10);
     delete updates.password;
     delete updates.currentPassword;
@@ -153,38 +151,33 @@ export async function getAllUsers() {
     .all();
 }
 
-// Admin function to activate/deactivate users
 export async function setUserActiveStatus(userId, active) {
   await db
     .update(schema.users)
     .set({ active })
     .where(eq(schema.users.id, userId));
-  
+
   return getUserById(userId);
 }
 
-// Admin function to update user role
 export async function updateUserRole(userId, role) {
-  if (!['user', 'admin'].includes(role)) {
+  if (!["user", "admin"].includes(role)) {
     throw new Error("Invalid role. Must be 'user' or 'admin'");
   }
-  
+
   await db
     .update(schema.users)
     .set({ role })
     .where(eq(schema.users.id, userId));
-  
+
   return getUserById(userId);
 }
 
-// Admin function to update user information (allows role changes)
 export async function adminUpdateUser(id, updates) {
-  // Validate role if provided
-  if (updates.role && !['user', 'admin'].includes(updates.role)) {
+  if (updates.role && !["user", "admin"].includes(updates.role)) {
     throw new Error("Invalid role. Must be 'user' or 'admin'");
   }
 
-  // Don't allow password changes through this function
   delete updates.password;
   delete updates.currentPassword;
   delete updates.passwordHash;
@@ -194,28 +187,24 @@ export async function adminUpdateUser(id, updates) {
   return getUserById(id);
 }
 
-// Admin function to update user password without knowing current password
 export async function adminUpdatePassword(userId, newPassword) {
   const passwordHash = await bcrypt.hash(newPassword, 10);
-  
+
   await db
     .update(schema.users)
     .set({ passwordHash })
     .where(eq(schema.users.id, userId));
-  
+
   return getUserById(userId);
 }
 
-// Admin function to delete user
 export async function deleteUser(id) {
-  // First check if user exists
   const user = await getUserById(id);
   if (!user) {
     throw new Error("User not found");
   }
 
-  // Delete the user
   await db.delete(schema.users).where(eq(schema.users.id, id));
-  
+
   return { message: "User deleted successfully" };
 }

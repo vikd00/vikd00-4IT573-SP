@@ -22,8 +22,7 @@ export const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({
   app,
 });
 
-// Register WebSocket handler for /ws endpoint
-app.use('/ws', createWebSocketHandler());
+app.use("/ws", createWebSocketHandler());
 
 // Middleware
 app.use(logger());
@@ -49,23 +48,29 @@ app.get("/health", (c) => {
 
 // 404 handler
 app.notFound((c) => {
-  return c.json({ 
-    error: {
-      code: "NOT_FOUND",
-      message: "Endpoint not found",
-      details: {}
-    }
-  }, 404);
+  return c.json(
+    {
+      error: {
+        code: "NOT_FOUND",
+        message: "Endpoint not found",
+        details: {},
+      },
+    },
+    404
+  );
 });
 
 // Error handler
 app.onError((err, c) => {
   console.error("Application error:", err);
-  return c.json({ 
-    error: {
-      code: "SERVER_ERROR",
-      message: "Internal server error",
-      details: {}
-    }
-  }, 500);
+  return c.json(
+    {
+      error: {
+        code: "SERVER_ERROR",
+        message: "Internal server error",
+        details: {},
+      },
+    },
+    500
+  );
 });

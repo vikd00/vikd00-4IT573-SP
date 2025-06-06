@@ -1,8 +1,9 @@
 import { db } from "../config/database.js";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte, lte } from "drizzle-orm";
 import * as schema from "../models/schema.js";
 import { getProductById } from "./productController.js";
 import { getCartByUserId } from "./cartController.js";
+import * as wsNotifyService from "../services/wsNotifyService.js";
 
 export async function createOrder(userId, { shippingAddress }) {
   const cart = await getCartByUserId(userId);
@@ -23,31 +24,44 @@ export async function createOrder(userId, { shippingAddress }) {
       if (product.inventory < item.quantity) {
         throw new Error(`Not enough inventory for ${product.name}`);
       }
-
       await db.insert(schema.orderItems).values({
         orderId,
         productId: item.productId,
         quantity: item.quantity,
-        price: product.price, // Use current price
+        price: product.price,
       });
 
+      const newInventory = product.inventory - item.quantity;
       await db
         .update(schema.products)
         .set({
-          inventory: product.inventory - item.quantity,
+          inventory: newInventory,
         })
         .where(eq(schema.products.id, item.productId));
+      if (newInventory <= 10 && newInventory > 0) {
+        wsNotifyService.lowStock({
+          id: product.id,
+          name: product.name,
+          inventory: newInventory,
+        });
+      }
     }
 
-    await db.delete(schema.cartItems).where(eq(schema.cartItems.cartId, cart.id));
+    await db
+      .delete(schema.cartItems)
+      .where(eq(schema.cartItems.cartId, cart.id));
+    const newOrder = await getOrderById(orderId, userId);
 
-    return getOrderById(orderId, userId);
+    wsNotifyService.orderCreated(newOrder);
+
+    return newOrder;
   } catch (error) {
     throw error;
   }
 }
 
-export async function getUserOrders(userId) {  const orders = await db
+export async function getUserOrders(userId) {
+  const orders = await db
     .select()
     .from(schema.orders)
     .where(eq(schema.orders.userId, userId))
@@ -89,18 +103,19 @@ export async function getUserOrders(userId) {  const orders = await db
 }
 
 export async function getOrderById(orderId, userId = null) {
-  // Build query - if userId is provided, ensure order belongs to user
-  let query = db.select().from(schema.orders).where(eq(schema.orders.id, orderId));
-  
+  let query = db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, orderId));
+
   if (userId) {
     query = query.where(eq(schema.orders.userId, userId));
   }
-  
+
   const order = await query.get();
-  
+
   if (!order) return null;
-  
-  // Get order items with product details
+
   const orderItems = await db
     .select({
       id: schema.orderItems.id,
@@ -117,7 +132,7 @@ export async function getOrderById(orderId, userId = null) {
     )
     .where(eq(schema.orderItems.orderId, orderId))
     .all();
-    
+
   return {
     ...order,
     items: orderItems,
@@ -137,8 +152,12 @@ export async function updateOrderStatus(orderId, status) {
       updatedAt: new Date().toISOString(),
     })
     .where(eq(schema.orders.id, orderId));
-    
-  return getOrderById(orderId);
+
+  const updatedOrder = await getOrderById(orderId);
+
+  wsNotifyService.orderStatusChanged(updatedOrder);
+
+  return updatedOrder;
 }
 
 export async function getAllOrders() {
@@ -153,14 +172,13 @@ export async function getAllOrders() {
       username: schema.users.username,
       email: schema.users.email,
       firstName: schema.users.firstName,
-      lastName: schema.users.lastName
+      lastName: schema.users.lastName,
     })
     .from(schema.orders)
     .leftJoin(schema.users, eq(schema.orders.userId, schema.users.id))
     .orderBy(desc(schema.orders.createdAt))
     .all();
 
-  // Get order items for each order
   const ordersWithDetails = await Promise.all(
     orders.map(async (order) => {
       const orderItems = await db
@@ -195,52 +213,24 @@ export async function getAllOrders() {
   return ordersWithDetails;
 }
 
-export async function getAdminDashboardStats() {
-  // Get basic statistics for admin dashboard
-  const totalOrders = await db.select().from(schema.orders).all();
-  const totalProducts = await db.select().from(schema.products).all();
-  const totalUsers = await db.select().from(schema.users).all();
-  
-  const ordersByStatus = {
-    pending: totalOrders.filter(order => order.status === 'pending').length,
-    processing: totalOrders.filter(order => order.status === 'processing').length,
-    shipped: totalOrders.filter(order => order.status === 'shipped').length,
-    delivered: totalOrders.filter(order => order.status === 'delivered').length
-  };
-  
-  const lowStockProducts = totalProducts.filter(product => product.inventory < 10);
-  
-  return {
-    totalOrders: totalOrders.length,
-    totalProducts: totalProducts.length,
-    totalUsers: totalUsers.length,
-    ordersByStatus,
-    lowStockProducts: lowStockProducts.map(p => ({
-      id: p.id,
-      name: p.name,
-      inventory: p.inventory
-    }))
-  };
-}
-
 export async function deleteOrder(orderId) {
-  // First check if order exists and get its status
   const order = await getOrderById(orderId);
-  
+
   if (!order) {
     throw new Error("Order not found");
   }
-  
-  // Only allow deletion of cancelled orders
-  if (order.status !== 'cancelled') {
+
+  if (order.status !== "cancelled") {
     throw new Error("Only cancelled orders can be deleted");
   }
-  
-  // Delete order items first (due to foreign key constraints)
-  await db.delete(schema.orderItems).where(eq(schema.orderItems.orderId, orderId));
-  
-  // Delete the order
+
+  await db
+    .delete(schema.orderItems)
+    .where(eq(schema.orderItems.orderId, orderId));
+
   await db.delete(schema.orders).where(eq(schema.orders.id, orderId));
-  
+
+  wsNotifyService.orderDeleted(orderId);
+
   return { success: true, message: "Order deleted successfully" };
 }

@@ -2,10 +2,9 @@ import { db } from "../config/database.js";
 import { eq, and } from "drizzle-orm";
 import * as schema from "../models/schema.js";
 import { getProductById } from "./productController.js";
+import * as wsNotifyService from "../services/wsNotifyService.js";
 
-// Cart operations
 export async function getCartByUserId(userId) {
-  // Find or create cart for user
   let cart = await db
     .select()
     .from(schema.carts)
@@ -21,7 +20,6 @@ export async function getCartByUserId(userId) {
     };
   }
 
-  // Get cart items with product details
   const cartItems = await db
     .select({
       id: schema.cartItems.id,
@@ -51,21 +49,17 @@ export async function getCartByUserId(userId) {
 }
 
 export async function addItemToCart(userId, { productId, quantity = 1 }) {
-  // Check product exists and is active
   const product = await getProductById(productId);
   if (!product || !product.active) {
     throw new Error("Product not found or unavailable");
   }
 
-  // Check inventory
   if (product.inventory < quantity) {
     throw new Error("Not enough inventory");
   }
 
-  // Get or create cart
   const cart = await getCartByUserId(userId);
 
-  // Check if product is already in cart
   const existingItem = await db
     .select()
     .from(schema.cartItems)
@@ -78,8 +72,8 @@ export async function addItemToCart(userId, { productId, quantity = 1 }) {
     .get();
 
   if (existingItem) {
-    // Update quantity
     const newQuantity = existingItem.quantity + quantity;
+
     if (product.inventory < newQuantity) {
       throw new Error("Not enough inventory");
     }
@@ -89,7 +83,6 @@ export async function addItemToCart(userId, { productId, quantity = 1 }) {
       .set({ quantity: newQuantity })
       .where(eq(schema.cartItems.id, existingItem.id));
   } else {
-    // Add new item
     await db.insert(schema.cartItems).values({
       cartId: cart.id,
       productId,
@@ -97,22 +90,21 @@ export async function addItemToCart(userId, { productId, quantity = 1 }) {
     });
   }
 
-  return getCartByUserId(userId);
+  const updatedCart = await getCartByUserId(userId);
+
+  wsNotifyService.cartUpdated(userId, updatedCart);
+
+  return updatedCart;
 }
 
 export async function updateCartItem(userId, itemId, { quantity }) {
-  // Get cart
   const cart = await getCartByUserId(userId);
 
-  // Find item
   const item = await db
     .select()
     .from(schema.cartItems)
     .where(
-      and(
-        eq(schema.cartItems.id, itemId),
-        eq(schema.cartItems.cartId, cart.id)
-      )
+      and(eq(schema.cartItems.id, itemId), eq(schema.cartItems.cartId, cart.id))
     )
     .get();
 
@@ -120,46 +112,48 @@ export async function updateCartItem(userId, itemId, { quantity }) {
     throw new Error("Cart item not found");
   }
 
-  // Check inventory
   const product = await getProductById(item.productId);
+
   if (product.inventory < quantity) {
     throw new Error("Not enough inventory");
   }
 
-  // Update quantity
   await db
     .update(schema.cartItems)
     .set({ quantity })
     .where(eq(schema.cartItems.id, itemId));
 
-  return getCartByUserId(userId);
+  const updatedCart = await getCartByUserId(userId);
+
+  wsNotifyService.cartUpdated(userId, updatedCart);
+
+  return updatedCart;
 }
 
 export async function removeCartItem(userId, itemId) {
-  // Get cart
   const cart = await getCartByUserId(userId);
 
-  // Delete item
   await db
     .delete(schema.cartItems)
     .where(
-      and(
-        eq(schema.cartItems.id, itemId),
-        eq(schema.cartItems.cartId, cart.id)
-      )
+      and(eq(schema.cartItems.id, itemId), eq(schema.cartItems.cartId, cart.id))
     );
 
-  return getCartByUserId(userId);
+  const updatedCart = await getCartByUserId(userId);
+
+  wsNotifyService.cartUpdated(userId, updatedCart);
+
+  return updatedCart;
 }
 
 export async function clearCart(userId) {
-  // Get cart
   const cart = await getCartByUserId(userId);
 
-  // Delete all items from cart
-  await db
-    .delete(schema.cartItems)
-    .where(eq(schema.cartItems.cartId, cart.id));
+  await db.delete(schema.cartItems).where(eq(schema.cartItems.cartId, cart.id));
 
-  return getCartByUserId(userId);
+  const updatedCart = await getCartByUserId(userId);
+
+  wsNotifyService.cartUpdated(userId, updatedCart);
+
+  return updatedCart;
 }
