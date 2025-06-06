@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
+import useWsSubscription from "../hooks/useWsSubscription";
 import {
   getCart,
   addToCart as addToCartAPI,
@@ -23,7 +24,9 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  // Load cart from backend when user logs in, fallback to localStorage
+
+  const selfId = useRef(crypto.randomUUID());
+
   useEffect(() => {
     const loadCart = async () => {
       if (isAuthenticated() && token) {
@@ -31,28 +34,25 @@ export const CartProvider = ({ children }) => {
           setLoading(true);
           setError(null);
           const cartData = await getCart(token);
-          // Convert backend cart format to frontend format
           const formattedItems =
             cartData.items?.map((item) => ({
               id: item.productId,
               name: item.name,
-              price: item.price / 100, // Convert cents to euros
+              price: item.price / 100,
               quantity: item.quantity,
               imageUrl: item.imageUrl,
-              cartItemId: item.id, // Store the cart item ID for backend operations
+              cartItemId: item.id,
             })) || [];
 
           setCartItems(formattedItems);
         } catch (err) {
           console.error("Error loading cart from backend:", err);
           setError("Chyba pri načítavaní košíka");
-          // Fallback to localStorage
           loadCartFromLocalStorage();
         } finally {
           setLoading(false);
         }
       } else {
-        // User not authenticated, load from localStorage
         loadCartFromLocalStorage();
       }
     };
@@ -72,19 +72,37 @@ export const CartProvider = ({ children }) => {
     loadCart();
   }, [isAuthenticated, token]);
 
-  // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
+
+  useWsSubscription("cartSync", (message) => {
+    if (message.data && message.data.origin !== selfId.current) {
+      console.log(
+        "CartContext: Received cart sync from another tab",
+        message.data
+      );
+
+      const formattedItems =
+        message.data.items?.map((item) => ({
+          id: item.productId || item.id,
+          name: item.name,
+          price: item.price / 100 || item.price,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl,
+          cartItemId: item.cartItemId || item.id,
+        })) || [];
+
+      setCartItems(formattedItems);
+    }
+  });
   const addToCart = async (product, quantity = 1) => {
     try {
       setError(null);
 
       if (isAuthenticated() && token) {
-        // Add to backend
         setLoading(true);
         const cartData = await addToCartAPI(product.id, quantity, token);
-        // Update local state with backend response
         const formattedItems =
           cartData.items?.map((item) => ({
             id: item.productId,
@@ -97,7 +115,6 @@ export const CartProvider = ({ children }) => {
 
         setCartItems(formattedItems);
       } else {
-        // Add to localStorage (fallback for non-authenticated users)
         setCartItems((prevItems) => {
           const existingItem = prevItems.find((item) => item.id === product.id);
 
@@ -124,7 +141,6 @@ export const CartProvider = ({ children }) => {
       setError(null);
 
       if (isAuthenticated() && token) {
-        // Find the cart item ID for this product
         const cartItem = cartItems.find((item) => item.id === productId);
         if (cartItem && cartItem.cartItemId) {
           setLoading(true);
@@ -132,7 +148,6 @@ export const CartProvider = ({ children }) => {
         }
       }
 
-      // Update local state (works for both authenticated and non-authenticated)
       setCartItems((prevItems) =>
         prevItems.filter((item) => item.id !== productId)
       );
@@ -163,7 +178,6 @@ export const CartProvider = ({ children }) => {
             token
           );
 
-          // Update local state with backend response
           const formattedItems =
             cartData.items?.map((item) => ({
               id: item.productId,
@@ -177,7 +191,6 @@ export const CartProvider = ({ children }) => {
           setCartItems(formattedItems);
         }
       } else {
-        // Update localStorage cart
         setCartItems((prevItems) =>
           prevItems.map((item) =>
             item.id === productId ? { ...item, quantity } : item

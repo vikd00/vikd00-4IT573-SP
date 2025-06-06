@@ -6,6 +6,7 @@ import { CssBaseline, Box } from "@mui/material";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { AdminProvider } from "./contexts/AdminContext";
+import { WebSocketProvider } from "./contexts/WebSocketContext";
 
 // Components
 import Layout from "./components/Layout";
@@ -14,7 +15,6 @@ import AdminRoute from "./components/AdminRoute";
 // Pages
 import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
-import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
 import OrdersPage from "./pages/OrdersPage";
 import LoginPage from "./pages/LoginPage";
@@ -49,54 +49,55 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <CartProvider>
-          <AdminProvider>
-            <Router>
-              <Layout>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/products" element={<ProductsPage />} />
-                  <Route path="/products/:id" element={<ProductDetailPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
+        <WebSocketProvider>
+          <CartProvider>
+            <AdminProvider>
+              <Router>
+                <Layout>
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/products" element={<ProductsPage />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
 
-                  {/* Protected User Routes */}
-                  <Route path="/orders" element={<OrdersPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
+                    {/* Protected User Routes */}
+                    <Route path="/orders" element={<OrdersPage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
 
-                  {/* Admin Routes */}
-                  <Route path="/admin/login" element={<AdminLoginPage />} />
-                  <Route path="/admin" element={
-                    <AdminRoute>
-                      <AdminDashboardPage />
-                    </AdminRoute>
-                  } />
-                  <Route
-                    path="/admin/products"
-                    element={
+                    {/* Admin Routes */}
+                    <Route path="/admin/login" element={<AdminLoginPage />} />
+                    <Route path="/admin" element={
                       <AdminRoute>
-                        <AdminProductsPage />
+                        <AdminDashboardPage />
                       </AdminRoute>
-                    }
-                  />
-                  <Route path="/admin/orders" element={
-                    <AdminRoute>
-                      <AdminOrdersPage />
-                    </AdminRoute>
-                  } />
-                  <Route path="/admin/users" element={
-                    <AdminRoute>
-                      <AdminUsersPage />
-                    </AdminRoute>
-                  } />
-                </Routes>
-              </Layout>
-            </Router>
-          </AdminProvider>
-        </CartProvider>
+                    } />
+                    <Route
+                      path="/admin/products"
+                      element={
+                        <AdminRoute>
+                          <AdminProductsPage />
+                        </AdminRoute>
+                      }
+                    />
+                    <Route path="/admin/orders" element={
+                      <AdminRoute>
+                        <AdminOrdersPage />
+                      </AdminRoute>
+                    } />
+                    <Route path="/admin/users" element={
+                      <AdminRoute>
+                        <AdminUsersPage />
+                      </AdminRoute>
+                    } />
+                  </Routes>
+                </Layout>
+              </Router>
+            </AdminProvider>
+          </CartProvider>
+        </WebSocketProvider>
       </AuthProvider>
     </ThemeProvider>
   );
