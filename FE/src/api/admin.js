@@ -1,5 +1,13 @@
 import { apiRequest } from './config.js';
 
+// Admin: Get dashboard metrics
+export const getDashboardMetrics = async (token) => {
+  return apiRequest('/api/admin/dashboard/metrics', {
+    method: 'GET',
+    token,
+  });
+};
+
 // Admin: Get all users
 export const getAllUsers = async (token) => {
   return apiRequest('/api/admin/users', {
