@@ -39,7 +39,7 @@ export function orderCreated(order) {
 
 export function orderStatusChanged(order) {
   sendToUser(order.userId, {
-    type: "order.status",
+    type: "orderStatus",
     data: {
       orderId: order.id,
       status: order.status,
@@ -76,7 +76,7 @@ export function productCreated(product) {
   });
 
   sendToAll({
-    type: "inventory.update",
+    type: "inventoryUpdate",
     data: [
       {
         id: product.id,
@@ -86,7 +86,7 @@ export function productCreated(product) {
     ],
     timestamp: new Date().toISOString(),
   });
-	
+
   if (product.inventory <= 10) {
     dashboardUpdate();
   }
@@ -102,7 +102,7 @@ export function productUpdated(product) {
   });
 
   sendToAll({
-    type: "inventory.update",
+    type: "inventoryUpdate",
     data: [
       {
         id: product.id,
@@ -123,7 +123,7 @@ export function productDeleted(productId) {
   });
 
   sendToAll({
-    type: "product.removed",
+    type: "productRemoved",
     data: {
       productId: productId,
     },
@@ -147,7 +147,7 @@ export function lowStock(product) {
 
 export function cartUpdated(userId, cartData) {
   sendToUser(userId, {
-    type: "cart.sync",
+    type: "cartSync",
     data: cartData,
     timestamp: new Date().toISOString(),
   });
