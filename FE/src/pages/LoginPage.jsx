@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate, Link as RouterLink, useLocation } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -9,44 +9,53 @@ import {
   Box,
   Link,
   Alert,
-  Divider
-} from '@mui/material';
-import { Login as LoginIcon } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+  Divider,
+} from "@mui/material";
+import { Login as LoginIcon } from "@mui/icons-material";
+import { useAuth } from "../contexts/AuthContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
-  
+
   const [formData, setFormData] = useState({
-    username: '',
-    password: ''
+    username: "",
+    password: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const from = location.state?.from?.pathname || "/";
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const result = await login(formData.username, formData.password);
-      
+
       if (result.success) {
-        navigate('/');
+        if (result.user.role === "admin" && from.startsWith("/admin")) {
+          navigate(from);
+        } else if (result.user.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate(from === "/admin" ? "/" : from);
+        }
       } else {
-        setError(result.error || 'Prihlásenie zlyhalo');
+        setError(result.error || "Prihlásenie zlyhalo");
       }
     } catch (err) {
-      setError('Nastala chyba pri prihlasovaní');
+      setError("Nastala chyba pri prihlasovaní");
     } finally {
       setLoading(false);
     }
@@ -54,16 +63,16 @@ const LoginPage = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
         minHeight="80vh"
       >
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+        <Paper elevation={3} sx={{ p: 4, width: "100%" }}>
           <Box textAlign="center" mb={3}>
-            <LoginIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+            <LoginIcon sx={{ fontSize: 60, color: "primary.main", mb: 2 }} />
             <Typography variant="h4" gutterBottom>
               Prihlásenie
             </Typography>
@@ -90,7 +99,6 @@ const LoginPage = () => {
               required
               disabled={loading}
             />
-
             <TextField
               fullWidth
               margin="normal"
@@ -102,7 +110,6 @@ const LoginPage = () => {
               required
               disabled={loading}
             />
-
             <Button
               type="submit"
               fullWidth
@@ -111,22 +118,14 @@ const LoginPage = () => {
               disabled={loading}
               sx={{ mt: 3, mb: 2 }}
             >
-              {loading ? 'Prihlasuje sa...' : 'Prihlásiť sa'}
+              {loading ? "Prihlasuje sa..." : "Prihlásiť sa"}
             </Button>
-
-            <Divider sx={{ my: 2 }} />
-
+            <Divider sx={{ my: 2 }} />{" "}
             <Box textAlign="center">
               <Typography variant="body2">
-                Nemáte účet?{' '}
+                Nemáte účet?{" "}
                 <Link component={RouterLink} to="/register">
                   Zaregistrujte sa
-                </Link>
-              </Typography>
-              
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                <Link component={RouterLink} to="/admin/login">
-                  Administrátorské prihlásenie
                 </Link>
               </Typography>
             </Box>

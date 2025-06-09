@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { 
-  getAllUsers, 
+import {
+  getAllUsers,
   createUser as createUserAPI,
-  updateUserRole, 
+  updateUserRole,
   updateUserStatus,
   updateUser as updateUserAPI,
   updateUserPassword as updateUserPasswordAPI,
@@ -13,9 +13,9 @@ import {
   deleteProduct as deleteProductAPI,
   getAllOrders,
   updateOrderStatus as updateOrderStatusAPI,
-  deleteOrder as deleteOrderAPI
+  deleteOrder as deleteOrderAPI,
 } from "../api/admin.js";
-import { loginUser } from "../api/users.js";
+import { useAuth } from "./AuthContext";
 
 const AdminContext = createContext();
 
@@ -31,82 +31,64 @@ export const AdminProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [authToken, setAuthToken] = useState(
-    localStorage.getItem("adminToken")
-  );  // Load data when component mounts
+
+  const { token, isAdmin, isAuthenticated } = useAuth();
+
   useEffect(() => {
-    const initializeAuth = async () => {
-      const token = localStorage.getItem("adminToken");
-      if (token) {
-        setAuthToken(token);
-        setIsAuthenticated(true);
-        console.log('Admin token found, loading data...');
-        try {
-          await loadAllData();
-        } catch (error) {
-          console.error('Error loading admin data:', error);
-          // If token is invalid, clear it
-          if (error?.response?.status === 401) {
-            localStorage.removeItem("adminToken");
-            setAuthToken(null);
-            setIsAuthenticated(false);
-          }
-        }
-      } else {
-        console.log('No admin token found');
-        setIsAuthenticated(false);
-      }
-      setIsAuthLoading(false);
-    };    initializeAuth();
-  }, []); // Only run once on mount
+    if (isAuthenticated() && isAdmin() && token) {
+      loadAllData();
+    }
+  }, [token, isAuthenticated, isAdmin]);
 
   const loadAllData = async () => {
     try {
-      console.log('Loading admin data...');
+      setLoading(true);
+      console.log("Loading admin data...");
       await Promise.all([loadUsers(), loadOrders(), loadProducts()]);
-      console.log('Admin data loaded successfully');
+      console.log("Admin data loaded successfully");
     } catch (error) {
       console.error("Error loading admin data:", error);
-      throw error; // Propagate error to handle token invalidation
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadUsers = async () => {
     try {
-      console.log('Loading users with token:', authToken ? 'present' : 'missing');
-      const usersData = await getAllUsers(authToken);
-      console.log('Users loaded:', usersData?.length || 0);
+      console.log("Loading users with token:", token ? "present" : "missing");
+      const usersData = await getAllUsers(token);
+      console.log("Users loaded:", usersData?.length || 0);
       setUsers(usersData);
     } catch (error) {
       console.error("Error loading users:", error);
     }
   };
+
   const loadOrders = async () => {
     try {
-      console.log('Loading orders with token:', authToken ? 'present' : 'missing');
-      const ordersData = await getAllOrders(authToken);
-      console.log('Orders loaded:', ordersData?.length || 0);
+      console.log("Loading orders with token:", token ? "present" : "missing");
+      const ordersData = await getAllOrders(token);
+      console.log("Orders loaded:", ordersData?.length || 0);
       setOrders(ordersData);
     } catch (error) {
       console.error("Error loading orders:", error);
     }
   };
-
   const loadProducts = async () => {
     try {
-      console.log('Loading products with token:', authToken ? 'present' : 'missing');
-      const productsData = await getAllProducts(authToken);
-      console.log('Products loaded:', productsData?.length || 0);
+      console.log(
+        "Loading products with token:",
+        token ? "present" : "missing"
+      );
+      const productsData = await getAllProducts(token);
+      console.log("Products loaded:", productsData?.length || 0);
       setProducts(productsData);
     } catch (error) {
       console.error("Error loading products:", error);
     }
   };
 
-  // Dashboard stats
   const getDashboardStats = () => {
     const totalProducts = products.length;
     const totalOrders = orders.length;
@@ -132,7 +114,6 @@ export const AdminProvider = ({ children }) => {
     };
   };
 
-  // Mock fetch function for dashboard
   const fetchDashboardData = async () => {
     setLoading(true);
     // Simulate API call
@@ -141,7 +122,8 @@ export const AdminProvider = ({ children }) => {
     }, 500);
   };
 
-  const dashboardData = getDashboardStats();  // Product CRUD operations
+  const dashboardData = getDashboardStats();
+
   const addProduct = async (product) => {
     try {
       const newProduct = await createProduct(product, authToken);
@@ -173,10 +155,14 @@ export const AdminProvider = ({ children }) => {
       throw error;
     }
   };
-  // Order operations
+
   const updateOrderStatus = async (orderId, status) => {
     try {
-      const updatedOrder = await updateOrderStatusAPI(orderId, status, authToken);
+      const updatedOrder = await updateOrderStatusAPI(
+        orderId,
+        status,
+        authToken
+      );
       setOrders((prev) =>
         prev.map((order) => (order.id === orderId ? updatedOrder : order))
       );
@@ -196,7 +182,7 @@ export const AdminProvider = ({ children }) => {
       throw error;
     }
   };
-  // User operations
+
   const updateUser = async (id, updatedUser) => {
     try {
       const user = await updateUserAPI(id, updatedUser, authToken);
@@ -223,7 +209,11 @@ export const AdminProvider = ({ children }) => {
       const user = users.find((u) => u.id === userId);
       if (!user) return;
 
-      const updatedUser = await updateUserStatus(userId, !user.active, authToken);
+      const updatedUser = await updateUserStatus(
+        userId,
+        !user.active,
+        authToken
+      );
       setUsers((prev) => prev.map((u) => (u.id === userId ? updatedUser : u)));
       return updatedUser;
     } catch (error) {
@@ -231,6 +221,7 @@ export const AdminProvider = ({ children }) => {
       throw error;
     }
   };
+
   const deleteUser = async (id) => {
     try {
       await deleteUserAPI(id, authToken);
@@ -240,6 +231,7 @@ export const AdminProvider = ({ children }) => {
       throw error;
     }
   };
+	
   const addUser = async (userData) => {
     try {
       const newUser = await createUserAPI(userData, authToken);
@@ -249,45 +241,14 @@ export const AdminProvider = ({ children }) => {
       console.error("Error creating user:", error);
       throw error;
     }
-  };// Authentication
-  const login = async (username, password) => {
-    try {
-      const response = await loginUser({ username, password });
-
-      // Check if the user has admin role
-      if (response.user.role !== 'admin') {
-        console.error('Access denied: Admin privileges required');
-        return false;
-      }
-
-      if (response.token) {
-        setAuthToken(response.token);
-        localStorage.setItem("adminToken", response.token);
-        setIsAuthenticated(true);
-        await loadAllData();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Login error:", error);
-      return false;
-    }
   };
 
-  const logout = () => {
-    setAuthToken(null);
-    localStorage.removeItem("adminToken");
-    setIsAuthenticated(false);
-    setUsers([]);
-    setOrders([]);
-    setProducts([]);
-  };
-  const value = {    // Data
+  const value = {
+    // Data
     products,
     orders,
     users,
-    isAuthenticated,
-    isAuthLoading,
+    loading,
     dashboardData,
     loading,
 
@@ -298,18 +259,12 @@ export const AdminProvider = ({ children }) => {
 
     // Order operations
     updateOrderStatus,
-    deleteOrder,
-
-    // User operations
+    deleteOrder, // User operations
     updateUser,
     updateUserPassword,
     toggleUserStatus,
     deleteUser,
     addUser,
-
-    // Auth operations
-    login,
-    logout,
 
     // Dashboard
     getDashboardStats,

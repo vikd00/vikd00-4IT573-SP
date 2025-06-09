@@ -1,28 +1,30 @@
-import { useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AdminContext } from '../contexts/AdminContext';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import AccessDeniedPage from "../pages/AccessDeniedPage";
 
 const AdminRoute = ({ children }) => {
   const navigate = useNavigate();
-  const { isAuthenticated, isAuthLoading } = useContext(AdminContext);
+  const { user, loading, isAuthenticated, isAdmin } = useAuth();
 
   useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      navigate('/admin/login');
+    if (!loading && !isAuthenticated()) {
+      navigate("/login");
     }
-  }, [isAuthenticated, isAuthLoading, navigate]);
+  }, [loading, isAuthenticated, navigate]);
 
-  // Show nothing while loading auth
-  if (isAuthLoading) {
-    return null; // You could return a loading spinner here if desired
-  }
-
-  // Show nothing if not authenticated (will redirect)
-  if (!isAuthenticated) {
+  if (loading) {
     return null;
   }
 
-  // Render the protected admin component
+  if (!isAuthenticated()) {
+    return null;
+  }
+
+  if (!isAdmin()) {
+    return <AccessDeniedPage />;
+  }
+
   return children;
 };
 
