@@ -22,7 +22,7 @@ export const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({
   app,
 });
 
-app.use("/ws", createWebSocketHandler());
+app.get("/ws", upgradeWebSocket(createWebSocketHandler()));
 
 // Middleware
 app.use(logger());

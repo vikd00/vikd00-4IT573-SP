@@ -1,6 +1,4 @@
-import { createNodeWebSocket } from "@hono/node-ws";
 import jwt from "jsonwebtoken";
-import { app, upgradeWebSocket } from "../app.js";
 
 const allSockets = new Set();
 const anonymousSockets = new Set();
@@ -15,7 +13,7 @@ function authenticateWebSocket(token) {
 }
 
 export const createWebSocketHandler = () => {
-  return upgradeWebSocket((c) => {
+  return (c) => {
     const token =
       c.req.query("token") ||
       c.req.header("authorization")?.replace("Bearer ", "");
@@ -103,7 +101,7 @@ export const createWebSocketHandler = () => {
         }
       },
     };
-  });
+  };
 };
 
 export function sendToAll(payload) {
