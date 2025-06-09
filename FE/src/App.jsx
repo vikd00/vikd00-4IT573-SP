@@ -24,7 +24,6 @@ import ProfilePage from "./pages/ProfilePage";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
@@ -68,7 +67,6 @@ function App() {
                     <Route path="/profile" element={<ProfilePage />} />
 
                     {/* Admin Routes */}
-                    <Route path="/admin/login" element={<AdminLoginPage />} />
                     <Route path="/admin" element={
                       <AdminRoute>
                         <AdminDashboardPage />
