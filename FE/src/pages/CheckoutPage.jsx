@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Container,
@@ -24,7 +24,7 @@ import { createOrder } from "../api/orders";
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { cartItems, getCartTotal, clearCart } = useCart();
-  const { user, isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token } = useAuth();
 
   const [shippingData, setShippingData] = useState({
     firstName: "",
@@ -34,9 +34,20 @@ const CheckoutPage = () => {
     postalCode: "",
     country: "Česká republika",
   });
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      navigate("/login", {
+        state: {
+          from: { pathname: "/checkout" },
+          message:
+            "Pre dokončenie objednávky sa musíte prihlásiť alebo zaregistrovať",
+        },
+      });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     setShippingData({

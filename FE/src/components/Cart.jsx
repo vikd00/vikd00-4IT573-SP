@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -13,8 +14,11 @@ import {
 } from '@mui/material';
 import { Add, Remove, Delete } from '@mui/icons-material';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Cart = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const {
     cartItems,
     updateQuantity,
@@ -27,6 +31,19 @@ const Cart = () => {
   const handleQuantityChange = (productId, newQuantity) => {
     if (newQuantity >= 0) {
       updateQuantity(productId, newQuantity);
+    }
+  };
+
+  const handleCheckout = () => {
+    if (!isAuthenticated()) {
+      navigate('/login', {
+        state: {
+          from: { pathname: '/checkout' },
+          message: 'Pre dokončenie objednávky sa musíte prihlásiť alebo zaregistrovať'
+        }
+      });
+    } else {
+      navigate('/checkout');
     }
   };
 
@@ -147,13 +164,11 @@ const Cart = () => {
                 <Typography variant="h6">
                   €{(getCartTotal() + 5).toFixed(2)}
                 </Typography>
-              </Box>
-
-              <Button
+              </Box>              <Button
                 fullWidth
                 variant="contained"
                 size="large"
-                href="/checkout"
+                onClick={handleCheckout}
               >
                 Pokračovať k objednávke
               </Button>

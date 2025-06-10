@@ -27,6 +27,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
 
   const from = location.state?.from?.pathname || "/";
+  const redirectMessage = location.state?.message;
 
   const handleChange = (e) => {
     setFormData({
@@ -78,8 +79,14 @@ const LoginPage = () => {
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Prihláste sa do svojho účtu
-            </Typography>
+            </Typography>{" "}
           </Box>
+
+          {redirectMessage && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              {redirectMessage}
+            </Alert>
+          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -124,7 +131,11 @@ const LoginPage = () => {
             <Box textAlign="center">
               <Typography variant="body2">
                 Nemáte účet?{" "}
-                <Link component={RouterLink} to="/register">
+                <Link
+                  component={RouterLink}
+                  to="/register"
+                  state={location.state}
+                >
                   Zaregistrujte sa
                 </Link>
               </Typography>

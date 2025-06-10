@@ -18,6 +18,7 @@ import {
   Inventory,
 } from "@mui/icons-material";
 import { useAdmin } from "../contexts/AdminContext";
+import { getStatusText, getStatusColor } from "../utils/orderStatus";
 import useDashboardMetrics from "../hooks/useDashboardMetrics";
 import useWsStatus from "../hooks/useWsStatus";
 
@@ -145,18 +146,17 @@ const Dashboard = () => {
                 <List>
                   {metrics.recentOrders.map((order) => (
                     <ListItem key={order.id} divider>
-                      <ListItemText
-                        primary={`Objednávka #${order.id} - ${
+                      <ListItemText                        primary={`Objednávka #${order.id} - ${
                           order.username || order.email
                         }`}
-                        secondary={`Status: ${order.status} | ${new Date(
+                        secondary={`Status: ${getStatusText(order.status)} | ${new Date(
                           order.createdAt
                         ).toLocaleDateString()}`}
                       />
                       <Chip
-                        label={order.status}
+                        label={getStatusText(order.status)}
                         size="small"
-                        color={order.status === "pending" ? "warning" : "info"}
+                        color={getStatusColor(order.status)}
                       />
                     </ListItem>
                   ))}

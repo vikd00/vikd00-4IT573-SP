@@ -39,13 +39,8 @@ import {
 import { AdminContext } from "../../contexts/AdminContext";
 
 const AdminProductsPage = () => {
-  const {
-    products,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    loadProducts,
-  } = useContext(AdminContext);
+  const { products, addProduct, updateProduct, deleteProduct, loadProducts } =
+    useContext(AdminContext);
 
   // All useState hooks
   const [open, setOpen] = useState(false);
@@ -63,7 +58,6 @@ const AdminProductsPage = () => {
     severity: "success",
   });
 
-  // Load products when component mounts
   useEffect(() => {
     loadProducts();
   }, []);
@@ -92,7 +86,7 @@ const AdminProductsPage = () => {
     setFormData({
       name: product.name,
       description: product.description,
-      price: (product.price / 100).toString(), 
+      price: (product.price / 100).toString(),
       inventory: product.inventory.toString(),
       imageUrl: product.imageUrl || "",
     });
@@ -161,7 +155,7 @@ const AdminProductsPage = () => {
 
   const getStockColor = (stock) => {
     if (stock === 0) return "error";
-    if (stock < 10) return "warning";
+    if (stock < 5) return "warning";
     return "success";
   };
 

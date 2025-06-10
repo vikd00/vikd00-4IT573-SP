@@ -28,6 +28,7 @@ import {
   Warning,
   Info,
 } from "@mui/icons-material";
+import { getStatusText } from "../utils/orderStatus";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { useNavigate } from "react-router-dom";
@@ -177,11 +178,13 @@ const Header = () => {
               sx={{ cursor: "pointer" }}
             />
           )}
+
           <IconButton color="inherit" onClick={handleNotificationOpen}>
             <Badge badgeContent={unreadCount} color="error">
               <Notifications />
             </Badge>
           </IconButton>
+
           {isAuthenticated() ? (
             <IconButton color="inherit" onClick={handleMenuOpen}>
               <AccountCircle />
@@ -191,6 +194,7 @@ const Header = () => {
               Prihlásiť sa
             </Button>
           )}
+
           {/* User Menu */}
           {isAuthenticated() && (
             <Menu
@@ -234,6 +238,7 @@ const Header = () => {
               <MenuItem onClick={handleAdminUsers}>Admin Používatelia</MenuItem>
             </Menu>
           )}
+					
           {/* Notification Menu */}
           <Menu
             anchorEl={notificationAnchorEl}
@@ -269,13 +274,12 @@ const Header = () => {
             </Box>
 
             {/* Notifications List */}
-            {isAuthenticated() && (
-              <>
-                <Divider />
-                <Box>
-                  <Typography variant="h6" sx={{ px: 2, py: 1 }}>
-                    Notifikácie ({unreadCount})
-                  </Typography>
+            {isAuthenticated() && ([
+              <Divider />,
+              <Box>
+                <Typography variant="h6" sx={{ px: 2, py: 1 }}>
+                  Notifikácie ({unreadCount})
+                </Typography>
 
                   {!isAuthenticated() ||
                   (adminNotifications.length === 0 &&
@@ -317,10 +321,9 @@ const Header = () => {
                         >
                           <ListItemIcon sx={{ minWidth: 36 }}>
                             <Info color="info" fontSize="small" />
-                          </ListItemIcon>
-                          <Box>
+                          </ListItemIcon>                          <Box>
                             <Typography variant="body2">
-                              Objednávka #{change.orderId}: {change.status}
+                              Objednávka #{change.orderId}: {getStatusText(change.status)}
                             </Typography>
                             <Typography
                               variant="caption"
@@ -334,7 +337,7 @@ const Header = () => {
                     </Box>
                   )}
                 </Box>
-              </>
+              ]
             )}
           </Menu>
         </Box>

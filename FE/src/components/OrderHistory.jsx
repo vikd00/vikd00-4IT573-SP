@@ -9,9 +9,9 @@ import {
 } from "@mui/material";
 import { format } from "date-fns";
 import { sk } from "date-fns/locale";
+import { getStatusText, getStatusColor } from "../utils/orderStatus";
 
-const OrderHistory = ({ orders = [] }) => {
-  if (orders.length === 0) {
+const OrderHistory = ({ orders = [] }) => {  if (orders.length === 0) {
     return (
       <Box textAlign="center" py={4}>
         <Typography variant="h6" color="text.secondary">
@@ -20,40 +20,6 @@ const OrderHistory = ({ orders = [] }) => {
       </Box>
     );
   }
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "warning";
-      case "processing":
-        return "info";
-      case "shipped":
-        return "primary";
-      case "delivered":
-        return "success";
-      case "cancelled":
-        return "error";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "Čaká na spracovanie";
-      case "processing":
-        return "Spracováva sa";
-      case "shipped":
-        return "Odoslané";
-      case "delivered":
-        return "Doručené";
-      case "cancelled":
-        return "Zrušené";
-      default:
-        return status;
-    }
-  };
 
   return (
     <Box>

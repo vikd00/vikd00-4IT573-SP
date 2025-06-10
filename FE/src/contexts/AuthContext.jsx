@@ -58,10 +58,12 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message };
     }
   };
+
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("cart");
   };
 
   const updateUser = (updatedUserData) => {

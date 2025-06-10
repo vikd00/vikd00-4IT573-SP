@@ -24,73 +24,137 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [initialized, setInitialized] = useState(false);
+
+  const formatCartItems = (items) => {
+    return (
+      items?.map((item) => ({
+        id: item.productId,
+        name: item.name,
+        price: item.price / 100,
+        quantity: item.quantity,
+        imageUrl: item.imageUrl,
+        cartItemId: item.id,
+      })) || []
+    );
+  };
+
+  const loadLocalStorageCart = () => {
+    try {
+      const savedCart = localStorage.getItem("cart");
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        return Array.isArray(parsedCart) ? parsedCart : [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Error loading cart from localStorage:", error);
+      localStorage.removeItem("cart"); // Remove corrupted cart data
+      return [];
+    }
+  };
+
+  const migrateLocalCartToBackend = async (localCart, token) => {
+    if (localCart.length === 0) return;
+
+    console.log("Migrating localStorage cart to backend:", localCart);
+    for (const item of localCart) {
+      try {
+        await addToCartAPI(item.id, item.quantity, token);
+      } catch (error) {
+        console.error("Error migrating cart item:", error);
+      }
+    }
+    localStorage.removeItem("cart");
+  };
 
   useEffect(() => {
-    const loadCart = async () => {
+    const handleAuthStateChange = async () => {
+      console.log(
+        "CartContext: Auth state change. Authenticated:",
+        isAuthenticated(),
+        "Token:",
+        !!token,
+        "Initialized:",
+        initialized
+      );
+
       if (isAuthenticated() && token) {
         try {
           setLoading(true);
           setError(null);
-          const cartData = await getCart(token);
-          const formattedItems =
-            cartData.items?.map((item) => ({
-              id: item.productId,
-              name: item.name,
-              price: item.price / 100,
-              quantity: item.quantity,
-              imageUrl: item.imageUrl,
-              cartItemId: item.id,
-            })) || [];
 
-          setCartItems(formattedItems);
+          const localCart = loadLocalStorageCart();
+          console.log("LocalStorage cart before migration:", localCart);
+
+          const cartData = await getCart(token);
+          const backendItems = formatCartItems(cartData.items);
+          console.log("Backend cart loaded:", backendItems);
+
+          if (localCart.length > 0) {
+            console.log("Migrating localStorage cart to backend:", localCart);
+            await migrateLocalCartToBackend(localCart, token);
+
+            const updatedCartData = await getCart(token);
+            const finalItems = formatCartItems(updatedCartData.items);
+            console.log("Final cart after migration:", finalItems);
+            setCartItems(finalItems);
+          } else {
+            console.log(
+              "No localStorage items, using backend cart:",
+              backendItems
+            );
+            setCartItems(backendItems);
+          }
         } catch (err) {
           console.error("Error loading cart from backend:", err);
           setError("Chyba pri načítavaní košíka");
-          loadCartFromLocalStorage();
+          setCartItems(loadLocalStorageCart());
         } finally {
           setLoading(false);
         }
       } else {
-        loadCartFromLocalStorage();
+        console.log("User not authenticated, loading from localStorage");
+        const localCart = loadLocalStorageCart();
+        console.log("Loading localStorage cart:", localCart);
+        setCartItems(localCart);
+        setError(null);
+        setLoading(false);
+      }
+
+      if (!initialized) {
+        setInitialized(true);
       }
     };
 
-    const loadCartFromLocalStorage = () => {
-      const savedCart = localStorage.getItem("cart");
-      if (savedCart) {
-        try {
-          setCartItems(JSON.parse(savedCart));
-        } catch (error) {
-          console.error("Error loading cart from localStorage:", error);
-          setCartItems([]);
-        }
-      }
-    };
-
-    loadCart();
+    handleAuthStateChange();
   }, [isAuthenticated, token]);
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
-  }, [cartItems]);
 
-  // WebSocket subscription for cart sync
+  useEffect(() => {
+    if (
+      initialized &&
+      !loading &&
+      !isAuthenticated() &&
+      cartItems.length >= 0
+    ) {
+      console.log("Saving cart to localStorage:", cartItems);
+      localStorage.setItem("cart", JSON.stringify(cartItems));
+    }
+  }, [cartItems, loading, isAuthenticated, initialized]);
+
   useWsSubscription("cartSync", (message) => {
+    if (!isAuthenticated() || !token) {
+      console.log("CartContext: Ignoring cart sync for unauthenticated user");
+      return;
+    }
+
     if (message.data) {
       console.log("CartContext: Received cart sync", message.data);
-
-      const formattedItems =
-        message.data.items?.map((item) => ({
-          id: item.productId || item.id,
-          name: item.name,
-          price: item.price / 100 || item.price,
-          quantity: item.quantity,
-          imageUrl: item.imageUrl,
-          cartItemId: item.cartItemId || item.id,
-        })) || [];
-
+      const formattedItems = formatCartItems(message.data.items);
       setCartItems(formattedItems);
     }
   });
+
   const addToCart = async (product, quantity = 1) => {
     try {
       setError(null);
@@ -98,17 +162,7 @@ export const CartProvider = ({ children }) => {
       if (isAuthenticated() && token) {
         setLoading(true);
         const cartData = await addToCartAPI(product.id, quantity, token);
-        const formattedItems =
-          cartData.items?.map((item) => ({
-            id: item.productId,
-            name: item.name,
-            price: item.price / 100,
-            quantity: item.quantity,
-            imageUrl: item.imageUrl,
-            cartItemId: item.id,
-          })) || [];
-
-        setCartItems(formattedItems);
+        setCartItems(formatCartItems(cartData.items));
       } else {
         setCartItems((prevItems) => {
           const existingItem = prevItems.find((item) => item.id === product.id);
@@ -131,6 +185,7 @@ export const CartProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
   const removeFromCart = async (productId) => {
     try {
       setError(null);
@@ -153,7 +208,6 @@ export const CartProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
   const updateQuantity = async (productId, quantity) => {
     if (quantity <= 0) {
       removeFromCart(productId);
@@ -172,18 +226,7 @@ export const CartProvider = ({ children }) => {
             quantity,
             token
           );
-
-          const formattedItems =
-            cartData.items?.map((item) => ({
-              id: item.productId,
-              name: item.name,
-              price: item.price / 100,
-              quantity: item.quantity,
-              imageUrl: item.imageUrl,
-              cartItemId: item.id,
-            })) || [];
-
-          setCartItems(formattedItems);
+          setCartItems(formatCartItems(cartData.items));
         }
       } else {
         setCartItems((prevItems) =>
@@ -208,15 +251,15 @@ export const CartProvider = ({ children }) => {
 
       if (isAuthenticated() && token && !skipApi) {
         setLoading(true);
-				const apiResult = await clearCartAPI(token); // Capture result
-      console.log("[clearCart FE] API call result:", apiResult);
-
         await clearCartAPI(token);
-      } else {
-        localStorage.removeItem("cart");
       }
 
       setCartItems([]);
+
+      if (!isAuthenticated() || skipApi) {
+        localStorage.removeItem("cart");
+      }
+
       return true;
     } catch (err) {
       console.error("Error clearing cart:", err);
@@ -247,18 +290,7 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const cartData = await getCart(token);
-
-      const formattedItems =
-        cartData.items?.map((item) => ({
-          id: item.productId,
-          name: item.name,
-          price: item.price / 100,
-          quantity: item.quantity,
-          imageUrl: item.imageUrl,
-          cartItemId: item.id,
-        })) || [];
-
-      setCartItems(formattedItems);
+      setCartItems(formatCartItems(cartData.items));
     } catch (err) {
       console.error("Error syncing cart:", err);
       setError("Chyba pri synchronizácii košíka");
