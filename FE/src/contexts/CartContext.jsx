@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import useWsSubscription from "../hooks/useWsSubscription";
 import {
@@ -24,8 +24,6 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const selfId = useRef(crypto.randomUUID());
 
   useEffect(() => {
     const loadCart = async () => {
@@ -71,17 +69,14 @@ export const CartProvider = ({ children }) => {
 
     loadCart();
   }, [isAuthenticated, token]);
-
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
+  // WebSocket subscription for cart sync
   useWsSubscription("cartSync", (message) => {
-    if (message.data && message.data.origin !== selfId.current) {
-      console.log(
-        "CartContext: Received cart sync from another tab",
-        message.data
-      );
+    if (message.data) {
+      console.log("CartContext: Received cart sync", message.data);
 
       const formattedItems =
         message.data.items?.map((item) => ({
@@ -206,11 +201,16 @@ export const CartProvider = ({ children }) => {
   };
 
   const clearCart = async (skipApi = false) => {
+    console.log("[clearCart FE] Initiating clear cart. skipApi:", skipApi);
+
     try {
       setError(null);
 
       if (isAuthenticated() && token && !skipApi) {
         setLoading(true);
+				const apiResult = await clearCartAPI(token); // Capture result
+      console.log("[clearCart FE] API call result:", apiResult);
+
         await clearCartAPI(token);
       } else {
         localStorage.removeItem("cart");

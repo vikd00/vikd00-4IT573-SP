@@ -115,7 +115,7 @@ const Cart = () => {
           ))}
 
           <Box display="flex" justifyContent="space-between" mt={2}>
-            <Button variant="outlined" color="error" onClick={clearCart}>
+            <Button variant="outlined" color="error" onClick={() => clearCart()}>
               Vyprázdniť košík
             </Button>
           </Box>
