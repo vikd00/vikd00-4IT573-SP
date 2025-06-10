@@ -127,7 +127,7 @@ export function productDeleted(productId) {
   });
 
   sendToAll({
-    type: "productRemoved",
+    type: "productDeleted",
     data: {
       productId: productId,
     },

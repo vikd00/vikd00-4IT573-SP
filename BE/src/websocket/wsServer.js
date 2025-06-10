@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import WebSocket, { WebSocketServer } from "ws";
+import WebSocket from "ws";
 
 const connections = new Map();
 let connectionCounter = 0;
