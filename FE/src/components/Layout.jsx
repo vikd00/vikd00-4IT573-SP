@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Container } from "@mui/material";
 import Header from "./Header";
-import WebSocketNotification from "./WebSocketNotification";
 
 const Layout = ({ children }) => {
   return (
@@ -13,7 +12,6 @@ const Layout = ({ children }) => {
       }}
     >
       <Header />
-      <WebSocketNotification />
 
       <Box
         component="main"
