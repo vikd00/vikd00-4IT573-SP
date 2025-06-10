@@ -26,26 +26,18 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider,
 } from "@mui/material";
 import {
-  Visibility as ViewIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  LocalShipping as ShippingIcon,
-  CheckCircle as CheckCircleIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { AdminContext } from "../../contexts/AdminContext";
 import { format } from "date-fns";
 
 const AdminOrdersPage = () => {
-  const {
-    orders,
-    updateOrderStatus,
-    deleteOrder,
-    loadOrders,
-  } = useContext(AdminContext);
+  const { orders, updateOrderStatus, deleteOrder, loadOrders } =
+    useContext(AdminContext);
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [statusDialog, setStatusDialog] = useState({
     open: false,
@@ -60,13 +52,12 @@ const AdminOrdersPage = () => {
     message: "",
     severity: "success",
   });
-
   const statusOptions = [
-    { value: "pending", label: "Pending", color: "warning" },
-    { value: "processing", label: "Processing", color: "info" },
-    { value: "shipped", label: "Shipped", color: "primary" },
-    { value: "delivered", label: "Delivered", color: "success" },
-    { value: "cancelled", label: "Cancelled", color: "error" },
+    { value: "pending", label: "Čaká na spracovanie", color: "warning" },
+    { value: "processing", label: "Spracováva sa", color: "info" },
+    { value: "shipped", label: "Odoslané", color: "primary" },
+    { value: "delivered", label: "Doručené", color: "success" },
+    { value: "cancelled", label: "Zrušené", color: "error" },
   ];
 
   const handleExpandClick = (orderId) => {
@@ -76,7 +67,7 @@ const AdminOrdersPage = () => {
     updateOrderStatus(orderId, newStatus);
     setAlert({
       show: true,
-      message: `Order status updated to ${newStatus}`,
+      message: `Stav objednávky bol zmenený na ${newStatus}`,
       severity: "success",
     });
     setTimeout(
@@ -89,7 +80,7 @@ const AdminOrdersPage = () => {
     if (order.status !== "cancelled") {
       setAlert({
         show: true,
-        message: "Order must be cancelled before it can be deleted",
+        message: "Objednávka musí byť zrušená pred vymazaním",
         severity: "error",
       });
       setTimeout(
@@ -106,14 +97,14 @@ const AdminOrdersPage = () => {
       await deleteOrder(deleteDialog.order.id);
       setAlert({
         show: true,
-        message: "Order deleted successfully",
+        message: "Objednávka bola úspešne vymazaná",
         severity: "success",
       });
       setDeleteDialog({ open: false, order: null });
     } catch (error) {
       setAlert({
         show: true,
-        message: error.message || "Failed to delete order",
+        message: error.message || "Nepodarilo sa vymazať objednávku",
         severity: "error",
       });
     }
@@ -129,13 +120,13 @@ const AdminOrdersPage = () => {
     } else if (order.username) {
       return order.username;
     }
-    return "Unknown Customer";
+    return "Neznámy zákazník";
   };
   const calculateOrderTotal = (items) => {
     return (
       items.reduce((total, item) => total + item.price * item.quantity, 0) / 100
-    ); 
-  }; 
+    );
+  };
   useEffect(() => {
     loadOrders();
   }, []);
@@ -146,26 +137,27 @@ const AdminOrdersPage = () => {
         <Alert severity={alert.severity} sx={{ mb: 2 }}>
           {alert.message}
         </Alert>
-      )}
+      )}{" "}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" component="h1">
-          Order Management
+          Správa objednávok
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-          Manage customer orders and update their status
+          Spravujte objednávky zákazníkov a aktualizujte ich stav
         </Typography>
       </Box>
       <TableContainer component={Paper}>
         <Table>
+          {" "}
           <TableHead>
             <TableRow>
-              <TableCell>Order ID</TableCell>
-              <TableCell>Customer</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell align="right">Total</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell align="center">Items</TableCell>
-              <TableCell align="center">Actions</TableCell>
+              <TableCell>ID objednávky</TableCell>
+              <TableCell>Zákazník</TableCell>
+              <TableCell>Dátum</TableCell>
+              <TableCell align="right">Celkom</TableCell>
+              <TableCell align="center">Stav</TableCell>
+              <TableCell align="center">Položky</TableCell>
+              <TableCell align="center">Akcie</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -180,16 +172,16 @@ const AdminOrdersPage = () => {
                   <TableCell>
                     <Typography variant="body2">
                       {formatCustomerName(order)}
-                    </Typography>
+                    </Typography>{" "}
                     <Typography variant="caption" color="text.secondary">
-                      {order.email || "No email"}
+                      {order.email || "Žiadny email"}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
                       {order.createdAt
                         ? format(new Date(order.createdAt), "MMM dd, yyyy")
-                        : "N/A"}
+                        : "Nie je k dispozícii"}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {order.createdAt
@@ -203,7 +195,7 @@ const AdminOrdersPage = () => {
                     </Typography>
                   </TableCell>{" "}
                   <TableCell align="center">
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <FormControl size="small" fullWidth>
                       <Select
                         value={order.status}
                         onChange={(e) =>
@@ -220,8 +212,9 @@ const AdminOrdersPage = () => {
                     </FormControl>
                   </TableCell>
                   <TableCell align="center">
+                    {" "}
                     <Typography variant="body2">
-                      {order.items.length} item(s)
+                      {order.items.length} položka(y)
                     </Typography>
                   </TableCell>{" "}
                   <TableCell align="center">
@@ -232,7 +225,7 @@ const AdminOrdersPage = () => {
                         size="small"
                         onClick={() => handleExpandClick(order.id)}
                         color="primary"
-                        title="View Details"
+                        title="Zobraziť detaily"
                       >
                         {expandedOrder === order.id ? (
                           <ExpandLessIcon />
@@ -247,8 +240,8 @@ const AdminOrdersPage = () => {
                         disabled={order.status !== "cancelled"}
                         title={
                           order.status !== "cancelled"
-                            ? "Order must be cancelled to delete"
-                            : "Delete Order"
+                            ? "Objednávka musí byť zrušená pred vymazaním"
+                            : "Vymazať objednávku"
                         }
                       >
                         <DeleteIcon />
@@ -266,49 +259,52 @@ const AdminOrdersPage = () => {
                       timeout="auto"
                       unmountOnExit
                     >
+                      {" "}
                       <Box sx={{ margin: 2 }}>
                         <Typography variant="h6" gutterBottom component="div">
-                          Order Details
+                          Detaily objednávky
                         </Typography>
                         <Box sx={{ display: "flex", gap: 4, mb: 2 }}>
                           {" "}
                           <Box>
+                            {" "}
                             <Typography
                               variant="subtitle2"
                               color="text.secondary"
                             >
-                              Shipping Address:
+                              Dodacia adresa:
                             </Typography>
                             <Typography variant="body2">
-                              {order.shippingAddress || "No address provided"}
+                              {order.shippingAddress || "Adresa nie je uvedená"}
                             </Typography>
                           </Box>
                           <Box>
+                            {" "}
                             <Typography
                               variant="subtitle2"
                               color="text.secondary"
                             >
-                              Payment Method:
+                              Spôsob platby:
                             </Typography>
                             <Typography variant="body2">
-                              {order.paymentMethod || "Credit Card"}
+                              {order.paymentMethod || "Kreditná karta"}
                             </Typography>
                           </Box>
-                        </Box>
+                        </Box>{" "}
                         <Typography variant="subtitle2" gutterBottom>
-                          Items:
+                          Položky:
                         </Typography>
                         <List dense>
                           {order.items.map((item, index) => (
                             <ListItem key={index} divider>
                               <ListItemText
                                 primary={item.name}
-                                secondary={`Quantity: ${item.quantity} × $${(
+                                secondary={`Množstvo: ${item.quantity} × €${(
                                   item.price / 100
                                 ).toFixed(2)}`}
-                              />
+                              />{" "}
                               <Typography variant="body2" fontWeight="medium">
-                                $
+                                €
                                 {((item.quantity * item.price) / 100).toFixed(
                                   2
                                 )}
@@ -330,16 +326,17 @@ const AdminOrdersPage = () => {
         open={statusDialog.open}
         onClose={() => setStatusDialog({ open: false, order: null })}
       >
-        <DialogTitle>Update Order Status</DialogTitle>
+        <DialogTitle>Aktualizovať stav objednávky</DialogTitle>
         <DialogContent>
+          {" "}
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Order #{statusDialog.order?.id}
+            Objednávka #{statusDialog.order?.id}
           </Typography>
           <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
+            <InputLabel>Stav</InputLabel>
             <Select
               value={statusDialog.order?.status || ""}
-              label="Status"
+              label="Stav"
               onChange={(e) => handleStatusChange(e.target.value)}
             >
               {statusOptions.map((option) => (
@@ -357,8 +354,9 @@ const AdminOrdersPage = () => {
           </FormControl>
         </DialogContent>
         <DialogActions>
+          {" "}
           <Button onClick={() => setStatusDialog({ open: false, order: null })}>
-            Cancel
+            Zrušiť
           </Button>
         </DialogActions>
       </Dialog>
@@ -367,26 +365,28 @@ const AdminOrdersPage = () => {
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, order: null })}
       >
-        <DialogTitle>Delete Order</DialogTitle>
+        <DialogTitle>Vymazať objednávku</DialogTitle>
         <DialogContent>
+          {" "}
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Are you sure you want to delete order #{deleteDialog.order?.id}?
+            Naozaj chcete vymazať objednávku #{deleteDialog.order?.id}?
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            This action cannot be undone. The order will be permanently removed
-            from the system.
+            Táto akcia sa nedá vrátiť späť. Objednávka bude natrvalo odstránená
+            zo systému.
           </Typography>
         </DialogContent>
         <DialogActions>
+          {" "}
           <Button onClick={() => setDeleteDialog({ open: false, order: null })}>
-            Cancel
+            Zrušiť
           </Button>
           <Button
             onClick={handleDeleteConfirm}
             color="error"
             variant="contained"
           >
-            Delete
+            Vymazať
           </Button>
         </DialogActions>
       </Dialog>

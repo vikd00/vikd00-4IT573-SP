@@ -85,7 +85,7 @@ const Header = () => {
         <IconButton
           edge="start"
           color="inherit"
-          aria-label="home"
+          aria-label="domov"
           onClick={() => navigate("/")}
           sx={{ mr: 2 }}
         >

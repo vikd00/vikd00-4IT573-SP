@@ -203,18 +203,18 @@ const ProductList = ({
                     exclusive
                     onChange={handleSortChange}
                     size="small"
-                    aria-label="sort products"
+                    aria-label="zoradiť produkty"
                   >
                     <ToggleButton
                       value="price-asc"
-                      aria-label="price ascending"
+                      aria-label="cena vzostupne"
                     >
                       <TrendingUp sx={{ mr: 0.5 }} />
                       Cena ↑
                     </ToggleButton>
                     <ToggleButton
                       value="price-desc"
-                      aria-label="price descending"
+                      aria-label="cena zostupne"
                     >
                       <TrendingDown sx={{ mr: 0.5 }} />
                       Cena ↓

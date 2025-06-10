@@ -57,8 +57,7 @@ const OrdersPage = () => {
 
   return (
     <Container maxWidth="lg">
-      <Box py={4}>
-        {message && (
+      <Box py={4}>        {message && (
           <Alert severity="success" sx={{ mb: 3 }}>
             {message}
           </Alert>
