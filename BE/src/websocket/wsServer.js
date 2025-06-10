@@ -1,13 +1,18 @@
 import jwt from "jsonwebtoken";
+import WebSocket, { WebSocketServer } from 'ws';
 
-const allSockets = new Set();
-const anonymousSockets = new Set();
-const adminSockets = new Set();
+const connections = new Map();
+let connectionCounter = 0;
 
 function authenticateWebSocket(token) {
+  if (!token) {
+    return null;
+  }
+  
   try {
     return jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
   } catch (error) {
+    console.warn("JWT verification failed:", error.message);
     return null;
   }
 }
@@ -18,66 +23,84 @@ export const createWebSocketHandler = () => {
       c.req.query("token") ||
       c.req.header("authorization")?.replace("Bearer ", "");
 
-    const decoded = token ? authenticateWebSocket(token) : null;
-    const isAnonymous = !token || !decoded;
+    const decodedToken = authenticateWebSocket(token);
+    const connId = `wsconn-${connectionCounter++}`;
 
     return {
-      onOpen: (ev, ws) => {
-        allSockets.add(ws);
+      onOpen: (evt, ws) => {
+        const connectionInfo = {
+          ws,
+          userId: null,
+          role: null,
+          isAdmin: false,
+          isAnonymous: true,
+          connectionId: connId
+        };
 
-        if (isAnonymous) {
-          anonymousSockets.add(ws);
-          ws.isAnonymous = true;
-          console.log("Anonymous WebSocket connected");
+        if (decodedToken && decodedToken.userId) {
+          connectionInfo.userId = decodedToken.userId;
+          connectionInfo.role = decodedToken.role;
+          connectionInfo.isAdmin = decodedToken.role === 'admin';
+          connectionInfo.isAnonymous = false;
+
+          console.log(`WebSocket connected: UserID ${connectionInfo.userId}, Role ${connectionInfo.role}, Admin ${connectionInfo.isAdmin}, ConnID ${connId}`);
         } else {
-          ws.userId = decoded.userId;
-          ws.isAdmin = decoded.role === "admin";
-          ws.userRole = decoded.role;
-
-          if (ws.isAdmin) {
-            adminSockets.add(ws);
-            console.log(`Admin WebSocket connected: ${ws.userId}`);
-          } else {
-            console.log(`User WebSocket connected: ${ws.userId}`);
-          }
+          console.log(`WebSocket connected: Anonymous, ConnID ${connId}`);
         }
+
+        ws.connId = connId;
+        connections.set(connId, connectionInfo);
+        
+        const stats = getConnectionStats();
+        console.log("Current connection stats:", stats);
       },
       onClose: (evt, ws) => {
-        allSockets.delete(ws);
-
-        if (ws.isAnonymous) {
-          anonymousSockets.delete(ws);
-          console.log("Anonymous WebSocket disconnected");
-        } else if (ws.isAdmin) {
-          adminSockets.delete(ws);
-          console.log(`Admin WebSocket disconnected: ${ws.userId}`);
+        const closedConnId = ws.connId;
+        
+        if (connections.has(closedConnId)) {
+          const connInfo = connections.get(closedConnId);
+          connections.delete(closedConnId);
+          
+          console.log(`WebSocket disconnected: UserID ${connInfo.userId || 'Anon'}, ConnID ${closedConnId}. Reason: ${evt.code} ${evt.reason}`);
         } else {
-          console.log(`User WebSocket disconnected: ${ws.userId}`);
+          console.warn(`WebSocket disconnected: Unknown ConnID ${closedConnId}`);
         }
+        
+        const stats = getConnectionStats();
+        console.log("Current connection stats:", stats);
       },
       onMessage: async (evt, ws) => {
+        const connInfo = connections.get(ws.connId);
+        
+        if (!connInfo) {
+          console.error(`WebSocket message from untracked connection: ${ws.connId}`);
+          ws.close(1011, "Untracked connection");
+          return;
+        }
+
+        if (connInfo.isAnonymous) {
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              error: {
+                code: "WS_AUTH_REQUIRED",
+                message: "Authentication required for sending messages",
+                details: {},
+              },
+            })
+          );
+          return;
+        }
+
         try {
           const message = JSON.parse(evt.data);
-
-          if (ws.isAnonymous) {
-            ws.send(
-              JSON.stringify({
-                type: "error",
-                error: {
-                  code: "WS_AUTH_REQUIRED",
-                  message: "Authentication required for sending messages",
-                  details: {},
-                },
-              })
-            );
-            return;
-          }
-
           console.log(
             "WebSocket message received:",
             message.type,
             "from user:",
-            ws.userId
+            connInfo.userId,
+            "connId:",
+            connInfo.connectionId
           );
 
           ws.send(
@@ -100,83 +123,112 @@ export const createWebSocketHandler = () => {
           );
         }
       },
+      onError: (err, ws) => {
+        console.error("WebSocket error for connection:", ws.connId || 'unknown', err);
+      },
     };
   };
 };
 
-export function sendToAll(payload) {
-  const message = JSON.stringify(payload);
+function getConnectionStats() {
+  let totalConnections = 0;
+  let anonymousConnections = 0;
+  let authenticatedUserConnections = 0;
+  let adminConnections = 0;
+  const uniqueUserIds = new Set();
 
-  for (const ws of allSockets) {
-    if (ws.readyState === ws.OPEN) {
-      ws.send(message);
+  for (const conn of connections.values()) {
+    totalConnections++;
+    
+    if (conn.isAnonymous) {
+      anonymousConnections++;
+    } else {
+      if (conn.isAdmin) {
+        adminConnections++;
+      } else {
+        authenticatedUserConnections++;
+      }
+      
+      if (conn.userId) {
+        uniqueUserIds.add(conn.userId);
+      }
     }
   }
 
-  const authenticatedCount = allSockets.size - anonymousSockets.size;
-  const anonymousCount = anonymousSockets.size;
-  console.log(
-    `Sent message to ${allSockets.size} connected sockets (${authenticatedCount} authenticated, ${anonymousCount} anonymous)`
-  );
+  return {
+    totalConnections,
+    anonymousConnections,
+    authenticatedUserConnections,
+    adminConnections,
+    distinctAuthenticatedUsers: uniqueUserIds.size
+  };
 }
 
-export function sendToAdmins(eventType, data) {
-  if (adminSockets.size === 0) {
-    console.log(`No admin connections for ${eventType} notification`);
-    return;
-  }
-
-  const message = JSON.stringify({
-    type: "adminNotification",
-    data: {
-      type: eventType,
-      ...data,
-    },
-    timestamp: new Date().toISOString(),
-  });
-
-  for (const ws of adminSockets) {
-    if (ws.readyState === ws.OPEN) {
-      ws.send(message);
-    }
-  }
-
-  console.log(`Sent ${eventType} notification to ${adminSockets.size} admins`);
-}
-
-export function sendToUser(userId, payload) {
-  if (!payload) return;
-
+function sendToFilteredConnections(filterFn, payload, messageContext) {
   const message = JSON.stringify(payload);
   let sentCount = 0;
 
-  for (const ws of allSockets) {
-    if (ws.userId === userId && ws.readyState === ws.OPEN) {
-      ws.send(message);
-      sentCount++;
+  connections.forEach((conn) => {
+    if (filterFn(conn) && conn.ws.readyState === WebSocket.OPEN) {
+      try {
+        conn.ws.send(message);
+        sentCount++;
+      } catch (error) {
+        console.error(`Failed to send message to connection ${conn.connectionId}:`, error);
+      }
     }
-  }
+  });
 
-  console.log(`Sent message to user ${userId} (${sentCount} connections)`);
+  const stats = getConnectionStats();
+  console.log(`Sent ${messageContext} to ${sentCount} connection(s). Stats:`, stats);
+  
+  return sentCount;
+}
+
+export function sendToAll(payload) {
+  return sendToFilteredConnections(() => true, payload, `message type ${payload.type} to ALL`);
+}
+
+export function sendToAdmins(eventType, data) {
+  const payload = {
+    type: "adminNotification",
+    data: {
+      type: eventType,
+      timestamp: new Date().toISOString(),
+      ...data
+    }
+  };
+  
+  return sendToFilteredConnections(
+    conn => conn.isAdmin && !conn.isAnonymous, 
+    payload, 
+    `admin event ${eventType}`
+  );
+}
+
+export function sendToUser(userId, payload) {
+  if (userId == null || userId === undefined) {
+    console.warn("sendToUser called with null/undefined userId");
+    return 0;
+  }
+  
+  return sendToFilteredConnections(
+    conn => conn.userId === userId && !conn.isAnonymous,
+    payload,
+    `message type ${payload.type} to UserID ${userId}`
+  );
 }
 
 export function sendDashboardMetrics(metrics) {
-  if (adminSockets.size === 0) {
-    console.log("No admin connections for dashboard metrics");
-    return;
-  }
-
-  const message = JSON.stringify({
+  const payload = {
     type: "dashboardMetrics",
     data: metrics,
-    timestamp: new Date().toISOString(),
-  });
-
-  for (const ws of adminSockets) {
-    if (ws.readyState === ws.OPEN) {
-      ws.send(message);
-    }
-  }
-
-  console.log(`Sent dashboard metrics to ${adminSockets.size} admins`);
+    timestamp: new Date().toISOString()
+  };
+  
+  return sendToFilteredConnections(
+    conn => conn.isAdmin && !conn.isAnonymous,
+    payload,
+    "dashboard metrics"
+  );
 }
