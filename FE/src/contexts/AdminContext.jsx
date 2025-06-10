@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import {
   getAllUsers,
   createUser as createUserAPI,
-  updateUserRole,
   updateUserStatus,
   updateUser as updateUserAPI,
   updateUserPassword as updateUserPasswordAPI,
@@ -12,6 +11,7 @@ import {
   updateProduct as updateProductAPI,
   deleteProduct as deleteProductAPI,
   getAllOrders,
+  getDashboardMetrics as getDashboardMetricsAPI,
   updateOrderStatus as updateOrderStatusAPI,
   deleteOrder as deleteOrderAPI,
 } from "../api/admin.js";
@@ -31,6 +31,7 @@ export const AdminProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [dashboardMetrics, setDashboardMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const { token, isAdmin, isAuthenticated } = useAuth();
@@ -40,12 +41,11 @@ export const AdminProvider = ({ children }) => {
       loadAllData();
     }
   }, [token, isAuthenticated, isAdmin]);
-
   const loadAllData = async () => {
     try {
       setLoading(true);
       console.log("Loading admin data...");
-      await Promise.all([loadUsers(), loadOrders(), loadProducts()]);
+      await Promise.all([loadUsers(), loadOrders(), loadProducts(), loadDashboardMetrics()]);
       console.log("Admin data loaded successfully");
     } catch (error) {
       console.error("Error loading admin data:", error);
@@ -74,8 +74,7 @@ export const AdminProvider = ({ children }) => {
     } catch (error) {
       console.error("Error loading orders:", error);
     }
-  };
-  const loadProducts = async () => {
+  };  const loadProducts = async () => {
     try {
       console.log(
         "Loading products with token:",
@@ -89,7 +88,22 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  const getDashboardStats = () => {
+  const loadDashboardMetrics = async () => {
+    try {
+      console.log(
+        "Loading dashboard metrics with token:",
+        token ? "present" : "missing"
+      );
+      const metrics = await getDashboardMetricsAPI(token);
+      console.log("Dashboard metrics loaded:", metrics);
+      setDashboardMetrics(metrics);
+    } catch (error) {
+      console.error("Error loading dashboard metrics:", error);
+      // Fallback to computed metrics if API fails
+      setDashboardMetrics(getComputedDashboardStats());
+    }
+  };
+  const getComputedDashboardStats = () => {
     const totalProducts = products.length;
     const totalOrders = orders.length;
     const totalUsers = users.filter((user) => user.role === "customer").length;
@@ -114,19 +128,14 @@ export const AdminProvider = ({ children }) => {
     };
   };
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
+  const getDashboardStats = () => {
+    // Return API data if available, otherwise return computed stats
+    return dashboardMetrics || getComputedDashboardStats();
   };
-
-  const dashboardData = getDashboardStats();
 
   const addProduct = async (product) => {
     try {
-      const newProduct = await createProduct(product, authToken);
+      const newProduct = await createProduct(product, token);
       setProducts((prev) => [...prev, newProduct]);
       return newProduct;
     } catch (error) {
@@ -137,7 +146,7 @@ export const AdminProvider = ({ children }) => {
 
   const updateProduct = async (id, updatedProduct) => {
     try {
-      const product = await updateProductAPI(id, updatedProduct, authToken);
+      const product = await updateProductAPI(id, updatedProduct, token);
       setProducts((prev) => prev.map((p) => (p.id === id ? product : p)));
       return product;
     } catch (error) {
@@ -148,7 +157,7 @@ export const AdminProvider = ({ children }) => {
 
   const deleteProduct = async (id) => {
     try {
-      await deleteProductAPI(id, authToken);
+      await deleteProductAPI(id, token);
       setProducts((prev) => prev.filter((product) => product.id !== id));
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -158,11 +167,7 @@ export const AdminProvider = ({ children }) => {
 
   const updateOrderStatus = async (orderId, status) => {
     try {
-      const updatedOrder = await updateOrderStatusAPI(
-        orderId,
-        status,
-        authToken
-      );
+      const updatedOrder = await updateOrderStatusAPI(orderId, status, token);
       setOrders((prev) =>
         prev.map((order) => (order.id === orderId ? updatedOrder : order))
       );
@@ -174,7 +179,7 @@ export const AdminProvider = ({ children }) => {
   };
   const deleteOrder = async (orderId) => {
     try {
-      await deleteOrderAPI(orderId, authToken);
+      await deleteOrderAPI(orderId, token);
       setOrders((prev) => prev.filter((order) => order.id !== orderId));
       return { success: true };
     } catch (error) {
@@ -185,7 +190,7 @@ export const AdminProvider = ({ children }) => {
 
   const updateUser = async (id, updatedUser) => {
     try {
-      const user = await updateUserAPI(id, updatedUser, authToken);
+      const user = await updateUserAPI(id, updatedUser, token);
       setUsers((prev) => prev.map((u) => (u.id === id ? user : u)));
       return user;
     } catch (error) {
@@ -196,7 +201,7 @@ export const AdminProvider = ({ children }) => {
 
   const updateUserPassword = async (userId, password) => {
     try {
-      const user = await updateUserPasswordAPI(userId, password, authToken);
+      const user = await updateUserPasswordAPI(userId, password, token);
       return user;
     } catch (error) {
       console.error("Error updating user password:", error);
@@ -209,11 +214,7 @@ export const AdminProvider = ({ children }) => {
       const user = users.find((u) => u.id === userId);
       if (!user) return;
 
-      const updatedUser = await updateUserStatus(
-        userId,
-        !user.active,
-        authToken
-      );
+      const updatedUser = await updateUserStatus(userId, !user.active, token);
       setUsers((prev) => prev.map((u) => (u.id === userId ? updatedUser : u)));
       return updatedUser;
     } catch (error) {
@@ -224,17 +225,17 @@ export const AdminProvider = ({ children }) => {
 
   const deleteUser = async (id) => {
     try {
-      await deleteUserAPI(id, authToken);
+      await deleteUserAPI(id, token);
       setUsers((prev) => prev.filter((user) => user.id !== id));
     } catch (error) {
       console.error("Error deleting user:", error);
       throw error;
     }
   };
-	
+
   const addUser = async (userData) => {
     try {
-      const newUser = await createUserAPI(userData, authToken);
+      const newUser = await createUserAPI(userData, token);
       setUsers((prev) => [...prev, newUser]);
       return newUser;
     } catch (error) {
@@ -242,14 +243,12 @@ export const AdminProvider = ({ children }) => {
       throw error;
     }
   };
-
   const value = {
     // Data
     products,
     orders,
     users,
-    loading,
-    dashboardData,
+    dashboardMetrics,
     loading,
 
     // Product operations
@@ -268,12 +267,12 @@ export const AdminProvider = ({ children }) => {
 
     // Dashboard
     getDashboardStats,
-    fetchDashboardData: loadAllData,
 
     // Reload functions
     loadUsers,
     loadOrders,
     loadProducts,
+    loadDashboardMetrics,
 
     // Mock notifications for dashboard
     notifications: [],
