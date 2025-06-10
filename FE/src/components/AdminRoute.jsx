@@ -5,7 +5,7 @@ import AccessDeniedPage from "../pages/AccessDeniedPage";
 
 const AdminRoute = ({ children }) => {
   const navigate = useNavigate();
-  const { user, loading, isAuthenticated, isAdmin } = useAuth();
+  const { loading, isAuthenticated, isAdmin } = useAuth();
 
   useEffect(() => {
     if (!loading && !isAuthenticated()) {

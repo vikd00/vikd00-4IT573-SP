@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -10,11 +10,7 @@ import {
   MenuItem,
   Box,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
   ListItemIcon,
-  Paper,
   Divider,
 } from "@mui/material";
 import {
@@ -38,10 +34,9 @@ import useOrderStatus from "../hooks/useOrderStatus";
 
 const Header = () => {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated, isAdmin } = useAuth();
+  const { logout, isAuthenticated, isAdmin } = useAuth();
   const { getCartItemsCount } = useCart();
 
-  // WebSocket and Notifications
   const connected = useWsStatus();
   const rawAdminNotifications = useAdminNotifications();
   const orderStatusHook = useOrderStatus();
@@ -238,7 +233,7 @@ const Header = () => {
               <MenuItem onClick={handleAdminUsers}>Admin Používatelia</MenuItem>
             </Menu>
           )}
-					
+
           {/* Notification Menu */}
           <Menu
             anchorEl={notificationAnchorEl}
@@ -274,71 +269,64 @@ const Header = () => {
             </Box>
 
             {/* Notifications List */}
-            {isAuthenticated() && ([
+            {isAuthenticated() && [
               <Divider />,
               <Box>
                 <Typography variant="h6" sx={{ px: 2, py: 1 }}>
                   Notifikácie ({unreadCount})
                 </Typography>
 
-                  {!isAuthenticated() ||
-                  (adminNotifications.length === 0 &&
-                    orderStatusChanges.length === 0) ? (
-                    <MenuItem>
-                      <Typography variant="body2" color="text.secondary">
-                        Žiadne notifikácie
-                      </Typography>
-                    </MenuItem>
-                  ) : (
-                    <Box sx={{ maxHeight: 250, overflow: "auto" }}>
-                      {adminNotifications.map((notification, index) => (
-                        <MenuItem
-                          key={`admin-${index}`}
-                          sx={{ alignItems: "flex-start" }}
-                        >
-                          <ListItemIcon sx={{ minWidth: 36 }}>
-                            <Warning color="warning" fontSize="small" />
-                          </ListItemIcon>
-                          <Box>
-                            <Typography variant="body2">
-                              {notification.message || notification.type}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {new Date(
-                                notification.timestamp
-                              ).toLocaleString()}
-                            </Typography>
-                          </Box>
-                        </MenuItem>
-                      ))}
-                      {orderStatusChanges.map((change, index) => (
-                        <MenuItem
-                          key={`order-${index}`}
-                          sx={{ alignItems: "flex-start" }}
-                        >
-                          <ListItemIcon sx={{ minWidth: 36 }}>
-                            <Info color="info" fontSize="small" />
-                          </ListItemIcon>                          <Box>
-                            <Typography variant="body2">
-                              Objednávka #{change.orderId}: {getStatusText(change.status)}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {new Date(change.timestamp).toLocaleString()}
-                            </Typography>
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Box>
-                  )}
-                </Box>
-              ]
-            )}
+                {!isAuthenticated() ||
+                (adminNotifications.length === 0 &&
+                  orderStatusChanges.length === 0) ? (
+                  <MenuItem>
+                    <Typography variant="body2" color="text.secondary">
+                      Žiadne notifikácie
+                    </Typography>
+                  </MenuItem>
+                ) : (
+                  <Box sx={{ maxHeight: 250, overflow: "auto" }}>
+                    {adminNotifications.map((notification, index) => (
+                      <MenuItem
+                        key={`admin-${index}`}
+                        sx={{ alignItems: "flex-start" }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <Warning color="warning" fontSize="small" />
+                        </ListItemIcon>
+                        <Box>
+                          <Typography variant="body2">
+                            {notification.message || notification.type}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(notification.timestamp).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                    {orderStatusChanges.map((change, index) => (
+                      <MenuItem
+                        key={`order-${index}`}
+                        sx={{ alignItems: "flex-start" }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <Info color="info" fontSize="small" />
+                        </ListItemIcon>{" "}
+                        <Box>
+                          <Typography variant="body2">
+                            Objednávka #{change.orderId}:{" "}
+                            {getStatusText(change.status)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(change.timestamp).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Box>
+                )}
+              </Box>,
+            ]}
           </Menu>
         </Box>
       </Toolbar>

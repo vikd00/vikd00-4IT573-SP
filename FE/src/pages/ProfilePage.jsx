@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Container,
   Paper,
@@ -8,55 +8,52 @@ import {
   Box,
   Avatar,
   Alert,
-  Divider,
-  Card,
-  CardContent
-} from '@mui/material';
-import { AccountCircle, Save, Lock, Person } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import { getUserProfile, updateUserProfile } from '../api/users';
+} from "@mui/material";
+import { AccountCircle, Save } from "@mui/icons-material";
+import { useAuth } from "../contexts/AuthContext";
+import { getUserProfile, updateUserProfile } from "../api/users";
 
 const ProfilePage = () => {
-  const { user, token, updateUser } = useAuth();
-    const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
-    address: ''
+  const { token, updateUser } = useAuth();
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
   });
 
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [fetchingProfile, setFetchingProfile] = useState(true);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   // Fetch user profile on component mount
   useEffect(() => {
     const fetchProfile = async () => {
       if (!token) return;
-      
+
       try {
         setFetchingProfile(true);
         const profileData = await getUserProfile(token);
         setFormData({
-          username: profileData.username || '',
-          email: profileData.email || '',
-          firstName: profileData.firstName || '',
-          lastName: profileData.lastName || '',
-          phone: profileData.phone || '',
-          address: profileData.address || ''
+          username: profileData.username || "",
+          email: profileData.email || "",
+          firstName: profileData.firstName || "",
+          lastName: profileData.lastName || "",
+          phone: profileData.phone || "",
+          address: profileData.address || "",
         });
       } catch (err) {
-        setError('Nastala chyba pri načítavaní profilu');
-        console.error('Error fetching profile:', err);
+        setError("Nastala chyba pri načítavaní profilu");
+        console.error("Error fetching profile:", err);
       } finally {
         setFetchingProfile(false);
       }
@@ -67,25 +64,26 @@ const ProfilePage = () => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handlePasswordChange = (e) => {
     setPasswordData({
       ...passwordData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
-  };  const handleSubmit = async (e) => {
+  };
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!token) {
-      setError('Nie ste prihlásený');
+      setError("Nie ste prihlásený");
       return;
     }
 
     setLoading(true);
-    setError('');
-    setMessage('');
+    setError("");
+    setMessage("");
 
     try {
       const updateData = {
@@ -93,47 +91,47 @@ const ProfilePage = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
-        address: formData.address
+        address: formData.address,
       };
 
       // Add password change if provided
       if (passwordData.newPassword) {
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-          setError('Nové heslá sa nezhodujú');
+          setError("Nové heslá sa nezhodujú");
           setLoading(false);
           return;
         }
         if (passwordData.newPassword.length < 6) {
-          setError('Nové heslo musí mať aspoň 6 znakov');
+          setError("Nové heslo musí mať aspoň 6 znakov");
           setLoading(false);
           return;
         }
         if (!passwordData.currentPassword) {
-          setError('Zadajte aktuálne heslo');
+          setError("Zadajte aktuálne heslo");
           setLoading(false);
           return;
         }
-        
+
         updateData.currentPassword = passwordData.currentPassword;
         updateData.password = passwordData.newPassword;
       }
 
       const updatedUser = await updateUserProfile(updateData, token);
-      
+
       // Update the auth context with new user data
       updateUser(updatedUser);
-      
+
       // Clear password fields after successful update
       setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
-      
-      setMessage('Profil bol úspešne aktualizovaný');
+
+      setMessage("Profil bol úspešne aktualizovaný");
     } catch (err) {
-      setError(err.message || 'Nastala chyba pri aktualizácii profilu');
-      console.error('Error updating profile:', err);
+      setError(err.message || "Nastala chyba pri aktualizácii profilu");
+      console.error("Error updating profile:", err);
     } finally {
       setLoading(false);
     }
@@ -153,7 +151,9 @@ const ProfilePage = () => {
       <Box py={4}>
         <Paper sx={{ p: 4 }}>
           <Box display="flex" alignItems="center" mb={4}>
-            <Avatar sx={{ width: 80, height: 80, mr: 3, bgcolor: 'primary.main' }}>
+            <Avatar
+              sx={{ width: 80, height: 80, mr: 3, bgcolor: "primary.main" }}
+            >
               <AccountCircle sx={{ fontSize: 60 }} />
             </Avatar>
             <Box>
@@ -189,10 +189,9 @@ const ProfilePage = () => {
                 disabled={loading}
                 helperText="Používateľské meno sa nedá zmeniť"
                 InputProps={{
-                  readOnly: true
+                  readOnly: true,
                 }}
               />
-
               <TextField
                 fullWidth
                 name="email"
@@ -202,7 +201,6 @@ const ProfilePage = () => {
                 onChange={handleChange}
                 disabled={loading}
               />
-
               <TextField
                 fullWidth
                 name="firstName"
@@ -211,7 +209,6 @@ const ProfilePage = () => {
                 onChange={handleChange}
                 disabled={loading}
               />
-
               <TextField
                 fullWidth
                 name="lastName"
@@ -219,7 +216,8 @@ const ProfilePage = () => {
                 value={formData.lastName}
                 onChange={handleChange}
                 disabled={loading}
-              />              <TextField
+              />{" "}
+              <TextField
                 fullWidth
                 name="phone"
                 label="Telefón"
@@ -227,7 +225,6 @@ const ProfilePage = () => {
                 onChange={handleChange}
                 disabled={loading}
               />
-
               <TextField
                 fullWidth
                 name="address"
@@ -238,16 +235,26 @@ const ProfilePage = () => {
                 onChange={handleChange}
                 disabled={loading}
               />
-
               {/* Password Change Section */}
-              <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Box
+                sx={{
+                  mt: 4,
+                  pt: 3,
+                  borderTop: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
                 <Typography variant="h6" gutterBottom>
                   Zmena hesla
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
                   Nechajte prázdne, ak nechcete zmeniť heslo
                 </Typography>
-                
+
                 <Box display="flex" flexDirection="column" gap={2}>
                   <TextField
                     fullWidth
@@ -281,7 +288,6 @@ const ProfilePage = () => {
                   />
                 </Box>
               </Box>
-
               <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
                 <Button
                   variant="outlined"
@@ -290,14 +296,14 @@ const ProfilePage = () => {
                 >
                   Zrušiť
                 </Button>
-                
+
                 <Button
                   type="submit"
                   variant="contained"
                   startIcon={<Save />}
                   disabled={loading}
                 >
-                  {loading ? 'Ukladá sa...' : 'Uložiť zmeny'}
+                  {loading ? "Ukladá sa..." : "Uložiť zmeny"}
                 </Button>
               </Box>
             </Box>

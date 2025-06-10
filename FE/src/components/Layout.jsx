@@ -20,13 +20,7 @@ const Layout = ({ children }) => {
           pb: 3,
         }}
       >
-        {children && (
-          <Container
-            maxWidth="lg"
-          >
-            {children}
-          </Container>
-        )}
+        {children && <Container maxWidth="lg">{children}</Container>}
       </Box>
     </Box>
   );

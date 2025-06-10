@@ -23,10 +23,8 @@ import {
   ExpandLess,
   ExpandMore,
   CheckCircle,
-  Error,
   Warning,
   Info,
-  Circle,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 import useWsStatus from "../hooks/useWsStatus";

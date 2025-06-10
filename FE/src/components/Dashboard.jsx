@@ -24,24 +24,26 @@ import useWsStatus from "../hooks/useWsStatus";
 
 const Dashboard = () => {
   const { getDashboardStats, loadDashboardMetrics, loading } = useAdmin();
-  
+
   const wsMetrics = useDashboardMetrics();
   const connected = useWsStatus();
-  
+
   useEffect(() => {
     if (loadDashboardMetrics) {
       loadDashboardMetrics();
     }
   }, [loadDashboardMetrics]);
-  
-  const dashboardMetrics = wsMetrics || getDashboardStats();
-  const lastMetricsUpdate = wsMetrics ? new Date().toLocaleString() : 'Computed locally';
 
-	useEffect(() => {
+  const dashboardMetrics = wsMetrics || getDashboardStats();
+  const lastMetricsUpdate = wsMetrics
+    ? new Date().toLocaleString()
+    : "Computed locally";
+
+  useEffect(() => {
     console.log("Dashboard metrics updated:", dashboardMetrics);
   }, [dashboardMetrics]);
 
-	useEffect(() => {
+  useEffect(() => {
     console.log("WebSocket connected status:", connected);
   }, [connected]);
 
@@ -59,7 +61,7 @@ const Dashboard = () => {
     revenue: 0,
     lowStockCount: 0,
     recentOrders: [],
-    lowStockProducts: []
+    lowStockProducts: [],
   };
 
   const StatCard = ({ title, value, icon, color = "primary" }) => (
@@ -99,7 +101,8 @@ const Dashboard = () => {
             </Typography>
           )}
         </Box>
-      </Box>      {/* Statistics Cards */}
+      </Box>
+      {/* Statistics Cards */}
       <Grid container spacing={3} mb={4}>
         <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
@@ -120,7 +123,9 @@ const Dashboard = () => {
         <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Dnešný obrat"
-            value={`€${(metrics.revenue || metrics.totalRevenue || 0).toFixed(2)}`}
+            value={`€${(metrics.revenue || metrics.totalRevenue || 0).toFixed(
+              2
+            )}`}
             icon={<TrendingUp fontSize="large" />}
             color="info"
           />
@@ -139,19 +144,22 @@ const Dashboard = () => {
         {/* Recent Orders */}
         <Grid item size={{ xs: 12, md: 6 }}>
           <Card>
-            <CardContent>              <Typography variant="h6" gutterBottom>
+            <CardContent>
+              {" "}
+              <Typography variant="h6" gutterBottom>
                 Posledné objednávky
               </Typography>
               {metrics?.recentOrders?.length > 0 ? (
                 <List>
                   {metrics.recentOrders.map((order) => (
                     <ListItem key={order.id} divider>
-                      <ListItemText                        primary={`Objednávka #${order.id} - ${
+                      <ListItemText
+                        primary={`Objednávka #${order.id} - ${
                           order.username || order.email
                         }`}
-                        secondary={`Status: ${getStatusText(order.status)} | ${new Date(
-                          order.createdAt
-                        ).toLocaleDateString()}`}
+                        secondary={`Status: ${getStatusText(
+                          order.status
+                        )} | ${new Date(order.createdAt).toLocaleDateString()}`}
                       />
                       <Chip
                         label={getStatusText(order.status)}
@@ -172,7 +180,9 @@ const Dashboard = () => {
         {/* Low Stock Products */}
         <Grid item size={{ xs: 12, md: 6 }}>
           <Card>
-            <CardContent>              <Typography variant="h6" gutterBottom>
+            <CardContent>
+              {" "}
+              <Typography variant="h6" gutterBottom>
                 Produkty s nízkym stavom zásob
               </Typography>
               {metrics?.lowStockProducts?.length > 0 ? (

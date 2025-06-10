@@ -49,7 +49,6 @@ const AdminUsersPage = () => {
     loadUsers,
   } = useContext(AdminContext);
 
-  // All useState hooks must come before any conditional returns
   const [open, setOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -65,11 +64,13 @@ const AdminUsersPage = () => {
     email: "",
     role: "user",
   });
+
   const [alert, setAlert] = useState({
     show: false,
     message: "",
     severity: "success",
   });
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -78,6 +79,7 @@ const AdminUsersPage = () => {
     { value: "user", label: "Používateľ" },
     { value: "admin", label: "Administrátor" },
   ];
+
   const handleAdd = () => {
     setEditingUser(null);
     setFormData({
@@ -90,6 +92,7 @@ const AdminUsersPage = () => {
     });
     setOpen(true);
   };
+
   const handleEdit = (user) => {
     setEditingUser(user);
     setFormData({
@@ -108,10 +111,12 @@ const AdminUsersPage = () => {
     setNewPassword("");
     setPasswordDialogOpen(true);
   };
+
   const handleDelete = (user) => {
     setUserToDelete(user);
     setDeleteDialogOpen(true);
   };
+
   const confirmDelete = async () => {
     if (userToDelete) {
       try {
@@ -140,6 +145,7 @@ const AdminUsersPage = () => {
     setDeleteDialogOpen(false);
     setUserToDelete(null);
   };
+
   const cancelDelete = () => {
     setDeleteDialogOpen(false);
     setUserToDelete(null);
@@ -157,6 +163,7 @@ const AdminUsersPage = () => {
       3000
     );
   };
+
   const handleSubmit = async () => {
     const userData = {
       username: formData.username,
@@ -445,7 +452,7 @@ const AdminUsersPage = () => {
               onChange={(e) => handleInputChange("username", e.target.value)}
               fullWidth
               required
-              disabled={editingUser} // Disable for editing existing users
+              disabled={editingUser}
             />
             {!editingUser && (
               <TextField

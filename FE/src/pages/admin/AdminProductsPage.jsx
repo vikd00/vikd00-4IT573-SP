@@ -18,12 +18,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
-  Switch,
   Avatar,
   Tooltip,
   Stack,
@@ -42,7 +37,6 @@ const AdminProductsPage = () => {
   const { products, addProduct, updateProduct, deleteProduct, loadProducts } =
     useContext(AdminContext);
 
-  // All useState hooks
   const [open, setOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
@@ -109,7 +103,7 @@ const AdminProductsPage = () => {
       await updateProduct(product.id, {
         ...product,
         active: !product.active,
-        price: product.price, // Keep price in cents for backend
+        price: product.price,
       });
       showAlert(
         `Produkt bol ${!product.active ? "aktivovaný" : "deaktivovaný"}`
@@ -124,7 +118,7 @@ const AdminProductsPage = () => {
       const productData = {
         name: formData.name,
         description: formData.description,
-        price: Math.round(parseFloat(formData.price) * 100), // Convert to cents
+        price: Math.round(parseFloat(formData.price) * 100),
         inventory: parseInt(formData.inventory),
         imageUrl: formData.imageUrl,
       };

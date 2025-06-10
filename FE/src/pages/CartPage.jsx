@@ -1,5 +1,5 @@
-import { Container, Box } from '@mui/material';
-import Cart from '../components/Cart';
+import { Container, Box } from "@mui/material";
+import Cart from "../components/Cart";
 
 const CartPage = () => {
   return (

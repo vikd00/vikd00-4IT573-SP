@@ -2,51 +2,98 @@ import { useState, useCallback } from "react";
 import useWsSubscription from "./useWsSubscription";
 
 export default function useProductUpdates() {
-  const [inventoryUpdates, setInventoryUpdates] = useState([]);
-  const [removedProducts, setRemovedProducts] = useState(new Set());
+  const [productUpdates, setProductUpdates] = useState(new Map());
+  const [newProducts, setNewProducts] = useState([]);
+  const [deletedProducts, setDeletedProducts] = useState(new Set());
 
-  // Stabilized callback for inventory updates
-  const handleInventoryUpdate = useCallback((message) => {
-    console.log("useProductUpdates: Received inventory update", message.data);
+  const handleProductUpdate = useCallback((message) => {
+    console.log("useProductUpdates: Received product update", message.data);
 
-    if (Array.isArray(message.data)) {
-      setInventoryUpdates((prev) => {
-        const newUpdates = [...message.data, ...prev].slice(0, 100); // Keep last 100 updates
-        return newUpdates;
+    if (message.data?.id) {
+      const productData = {
+        ...message.data,
+        price: message.data.price / 100,
+      };
+
+      setProductUpdates((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(message.data.id, productData);
+        return newMap;
       });
     }
-  }, [setInventoryUpdates]); // setInventoryUpdates is stable
+  }, []);
 
-  // Stabilized callback for product removal
-  const handleProductRemoved = useCallback((message) => {
+  const handleProductCreated = useCallback((message) => {
+    console.log("useProductUpdates: Received product created", message.data);
+
+    if (message.data?.id) {
+      const productData = {
+        ...message.data,
+        price: message.data.price / 100,
+      };
+
+      setNewProducts((prev) => {
+        if (prev.some((p) => p.id === productData.id)) {
+          return prev;
+        }
+        return [productData, ...prev];
+      });
+    }
+  }, []);
+
+  const handleProductDeleted = useCallback((message) => {
     console.log("useProductUpdates: Product removed", message.data);
 
     if (message.data?.productId) {
-      setRemovedProducts((prev) => new Set([...prev, message.data.productId]));
+      setDeletedProducts((prev) => new Set([...prev, message.data.productId]));
+
+      setProductUpdates((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(message.data.productId);
+        return newMap;
+      });
+
+      setNewProducts((prev) =>
+        prev.filter((p) => p.id !== message.data.productId)
+      );
     }
-  }, [setRemovedProducts]); // setRemovedProducts is stable
+  }, []);
 
-  useWsSubscription("inventoryUpdate", handleInventoryUpdate);
-  useWsSubscription("productRemoved", handleProductRemoved);
+  useWsSubscription("productUpdated", handleProductUpdate);
+  useWsSubscription("productCreated", handleProductCreated);
+  useWsSubscription("productDeleted", handleProductDeleted);
 
-  const getLatestInventoryForProduct = (productId) => {
-    const update = inventoryUpdates.find((update) => update.id === productId);
-    return update ? update.inventory : null;
+  const getUpdatedProduct = (productId) => {
+    return productUpdates.get(productId) || null;
   };
 
-  const isProductRemoved = (productId) => {
-    return removedProducts.has(productId);
+  const isProductDeleted = (productId) => {
+    return deletedProducts.has(productId);
   };
 
-  const clearRemovedProducts = () => {
-    setRemovedProducts(new Set());
+  const isProductDeactivated = (productId) => {
+    const updatedProduct = productUpdates.get(productId);
+    return updatedProduct && updatedProduct.active === false;
+  };
+
+  const clearDeletedProducts = () => {
+    setDeletedProducts(new Set());
+  };
+
+  const clearUpdates = () => {
+    setProductUpdates(new Map());
+    setNewProducts([]);
+    setDeletedProducts(new Set());
   };
 
   return {
-    inventoryUpdates,
-    removedProducts: Array.from(removedProducts),
-    getLatestInventoryForProduct,
-    isProductRemoved,
-    clearRemovedProducts,
+    productUpdates: Array.from(productUpdates.values()),
+    newProducts,
+    deletedProducts: Array.from(deletedProducts),
+    getUpdatedProduct,
+    isProductDeleted,
+    isProductDeactivated,
+    clearDeletedProducts,
+    clearUpdates,
   };
 }

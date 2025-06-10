@@ -11,7 +11,8 @@ import { format } from "date-fns";
 import { sk } from "date-fns/locale";
 import { getStatusText, getStatusColor } from "../utils/orderStatus";
 
-const OrderHistory = ({ orders = [] }) => {  if (orders.length === 0) {
+const OrderHistory = ({ orders = [] }) => {
+  if (orders.length === 0) {
     return (
       <Box textAlign="center" py={4}>
         <Typography variant="h6" color="text.secondary">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 export const useWebSocket = (url, token) => {
   const [socket, setSocket] = useState(null);
@@ -16,7 +16,7 @@ export const useWebSocket = (url, token) => {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log("WebSocket connected");
         setConnected(true);
         setReconnectAttempts(0);
       };
@@ -24,33 +24,33 @@ export const useWebSocket = (url, token) => {
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          setMessages(prev => [...prev, message]);
+          setMessages((prev) => [...prev, message]);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error("Error parsing WebSocket message:", error);
         }
       };
 
       ws.onclose = () => {
-        console.log('WebSocket disconnected');
+        console.log("WebSocket disconnected");
         setConnected(false);
-        
+
         // Attempt to reconnect
         if (reconnectAttempts < maxReconnectAttempts) {
           const delay = Math.pow(2, reconnectAttempts) * 1000; // Exponential backoff
           reconnectTimeoutRef.current = setTimeout(() => {
-            setReconnectAttempts(prev => prev + 1);
+            setReconnectAttempts((prev) => prev + 1);
             connect();
           }, delay);
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error("WebSocket error:", error);
       };
 
       setSocket(ws);
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
+      console.error("Error creating WebSocket connection:", error);
     }
   };
 
@@ -73,7 +73,7 @@ export const useWebSocket = (url, token) => {
     if (socket && connected) {
       socket.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket not connected');
+      console.warn("WebSocket not connected");
     }
   };
 
@@ -86,6 +86,6 @@ export const useWebSocket = (url, token) => {
     messages,
     sendMessage,
     clearMessages,
-    reconnectAttempts
+    reconnectAttempts,
   };
 };

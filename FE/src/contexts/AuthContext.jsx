@@ -23,7 +23,6 @@ export const AuthProvider = ({ children }) => {
           setUser(userData);
         } catch (error) {
           console.error("Token validation failed:", error);
-          // Token is invalid, remove it
           localStorage.removeItem("token");
           setToken(null);
         }

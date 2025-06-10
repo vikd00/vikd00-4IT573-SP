@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { CssBaseline, Box } from "@mui/material";
+import { CssBaseline } from "@mui/material";
 
 // Context Providers
 import { AuthProvider } from "./contexts/AuthContext";
@@ -67,11 +67,14 @@ function App() {
                     <Route path="/profile" element={<ProfilePage />} />
 
                     {/* Admin Routes */}
-                    <Route path="/admin" element={
-                      <AdminRoute>
-                        <AdminDashboardPage />
-                      </AdminRoute>
-                    } />
+                    <Route
+                      path="/admin"
+                      element={
+                        <AdminRoute>
+                          <AdminDashboardPage />
+                        </AdminRoute>
+                      }
+                    />
                     <Route
                       path="/admin/products"
                       element={
@@ -80,16 +83,22 @@ function App() {
                         </AdminRoute>
                       }
                     />
-                    <Route path="/admin/orders" element={
-                      <AdminRoute>
-                        <AdminOrdersPage />
-                      </AdminRoute>
-                    } />
-                    <Route path="/admin/users" element={
-                      <AdminRoute>
-                        <AdminUsersPage />
-                      </AdminRoute>
-                    } />
+                    <Route
+                      path="/admin/orders"
+                      element={
+                        <AdminRoute>
+                          <AdminOrdersPage />
+                        </AdminRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/users"
+                      element={
+                        <AdminRoute>
+                          <AdminUsersPage />
+                        </AdminRoute>
+                      }
+                    />
                   </Routes>
                 </Layout>
               </Router>

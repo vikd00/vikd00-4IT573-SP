@@ -11,7 +11,6 @@ import {
   Card,
   CardMedia,
   CardContent,
-  CardActions,
   Button,
   Chip,
   CircularProgress,
@@ -26,14 +25,14 @@ import {
 import { useCart } from "../contexts/CartContext";
 import { useNavigate } from "react-router-dom";
 import { getProducts } from "../api/products";
+import useProductUpdates from "../hooks/useProductUpdates";
 
-// Helper function to remove diacritics and punctuation for search
 const normalizeSearchText = (text) => {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-    .replace(/[^\w\s]/g, "") // Remove punctuation
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/g, "")
     .trim();
 };
 
@@ -45,17 +44,21 @@ const ProductList = ({
 }) => {
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const {
+    getUpdatedProduct,
+    productUpdates,
+    newProducts,
+    isProductDeleted,
+    isProductDeactivated,
+  } = useProductUpdates();
 
-  // State for products data
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // State for search and filtering
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("");
 
-  // Fetch products from backend
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -63,7 +66,6 @@ const ProductList = ({
         setError(null);
         const productsData = await getProducts();
 
-        // Convert price from cents to euros for display
         const productsWithFormattedPrice = productsData.map((product) => ({
           ...product,
           price: product.price / 100, // Convert cents to euros
@@ -81,14 +83,42 @@ const ProductList = ({
     fetchProducts();
   }, []);
 
-  // Filter and sort products
   const processedProducts = useMemo(() => {
-    let filtered = products;
+    let allProducts = products
+      .map((product) => {
+        const updatedProduct = getUpdatedProduct(product.id);
+        if (updatedProduct) {
+          return updatedProduct;
+        }
+        return product;
+      })
+      .filter((product) => {
+        if (isProductDeleted(product.id)) {
+          return false;
+        }
+        if (isProductDeactivated(product.id)) {
+          return false;
+        }
+        return true;
+      });
+    const existingProductIds = new Set(allProducts.map((p) => p.id));
+    const filteredNewProducts = newProducts.filter(
+      (p) => !existingProductIds.has(p.id) && p.active === true
+    );
+    allProducts = [...allProducts, ...filteredNewProducts];
 
-    // Apply search filter
+    const activatedProducts = productUpdates.filter(
+      (p) =>
+        !existingProductIds.has(p.id) &&
+        p.active === true &&
+        !isProductDeleted(p.id)
+    );
+    allProducts = [...allProducts, ...activatedProducts];
+
+    let filtered = allProducts;
     if (searchTerm.trim()) {
       const normalizedSearch = normalizeSearchText(searchTerm);
-      filtered = products.filter((product) => {
+      filtered = allProducts.filter((product) => {
         const normalizedName = normalizeSearchText(product.name || "");
         const normalizedDesc = normalizeSearchText(product.description || "");
         return (
@@ -98,7 +128,6 @@ const ProductList = ({
       });
     }
 
-    // Apply sorting
     if (sortOrder) {
       filtered = [...filtered].sort((a, b) => {
         if (sortOrder === "price-asc") {
@@ -111,13 +140,22 @@ const ProductList = ({
       });
     }
 
-    // Apply max results limit
     if (maxResults && filtered.length > maxResults) {
       filtered = filtered.slice(0, maxResults);
     }
 
     return filtered;
-  }, [products, searchTerm, sortOrder, maxResults]);
+  }, [
+    products,
+    searchTerm,
+    sortOrder,
+    maxResults,
+    getUpdatedProduct,
+    productUpdates,
+    newProducts,
+    isProductDeleted,
+    isProductDeactivated,
+  ]);
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
@@ -172,7 +210,7 @@ const ProductList = ({
               <Grid item size={{ xs: 12, md: showFilters ? 8 : 12 }}>
                 <TextField
                   fullWidth
-									size="small"
+                  size="small"
                   placeholder="Hľadať produkty..."
                   value={searchTerm}
                   onChange={handleSearch}
@@ -205,17 +243,11 @@ const ProductList = ({
                     size="small"
                     aria-label="zoradiť produkty"
                   >
-                    <ToggleButton
-                      value="price-asc"
-                      aria-label="cena vzostupne"
-                    >
+                    <ToggleButton value="price-asc" aria-label="cena vzostupne">
                       <TrendingUp sx={{ mr: 0.5 }} />
                       Cena ↑
                     </ToggleButton>
-                    <ToggleButton
-                      value="price-desc"
-                      aria-label="cena zostupne"
-                    >
+                    <ToggleButton value="price-desc" aria-label="cena zostupne">
                       <TrendingDown sx={{ mr: 0.5 }} />
                       Cena ↓
                     </ToggleButton>
@@ -306,7 +338,9 @@ const ProductList = ({
                     />
                   </Box>
                 </CardContent>
-                <Box sx={{ p: 2, pt: 0, display: "flex", flexDirection: "column" }}>
+                <Box
+                  sx={{ p: 2, pt: 0, display: "flex", flexDirection: "column" }}
+                >
                   <Button
                     fullWidth
                     variant="outlined"
@@ -318,7 +352,7 @@ const ProductList = ({
 
                   <Button
                     fullWidth
-										sx={{ mt: 1 }}
+                    sx={{ mt: 1 }}
                     variant="contained"
                     startIcon={<AddShoppingCart />}
                     onClick={() => handleAddToCart(product)}

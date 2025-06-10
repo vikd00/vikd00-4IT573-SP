@@ -1,20 +1,17 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
   Typography,
   Button,
-  TextField,
   Box,
-  Chip,
   Grid,
   IconButton,
-  Divider
-} from '@mui/material';
-import { Add, Remove, Delete } from '@mui/icons-material';
-import { useCart } from '../contexts/CartContext';
-import { useAuth } from '../contexts/AuthContext';
+  Divider,
+} from "@mui/material";
+import { Add, Remove, Delete } from "@mui/icons-material";
+import { useCart } from "../contexts/CartContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -25,7 +22,7 @@ const Cart = () => {
     removeFromCart,
     clearCart,
     getCartTotal,
-    getCartItemsCount
+    getCartItemsCount,
   } = useCart();
 
   const handleQuantityChange = (productId, newQuantity) => {
@@ -36,14 +33,15 @@ const Cart = () => {
 
   const handleCheckout = () => {
     if (!isAuthenticated()) {
-      navigate('/login', {
+      navigate("/login", {
         state: {
-          from: { pathname: '/checkout' },
-          message: 'Pre dokončenie objednávky sa musíte prihlásiť alebo zaregistrovať'
-        }
+          from: { pathname: "/checkout" },
+          message:
+            "Pre dokončenie objednávky sa musíte prihlásiť alebo zaregistrovať",
+        },
       });
     } else {
-      navigate('/checkout');
+      navigate("/checkout");
     }
   };
 
@@ -77,16 +75,16 @@ const Cart = () => {
                 <Box display="flex" alignItems="center" gap={2}>
                   <Box
                     component="img"
-                    src={item.image || '/api/placeholder/100/100'}
+                    src={item.image || "/api/placeholder/100/100"}
                     alt={item.name}
                     sx={{
                       width: 80,
                       height: 80,
-                      objectFit: 'cover',
-                      borderRadius: 1
+                      objectFit: "cover",
+                      borderRadius: 1,
                     }}
                   />
-                  
+
                   <Box flexGrow={1}>
                     <Typography variant="h6" gutterBottom>
                       {item.name}
@@ -95,31 +93,41 @@ const Cart = () => {
                       €{item.price?.toFixed(2)} za kus
                     </Typography>
                   </Box>
-                  
+
                   <Box display="flex" alignItems="center" gap={1}>
                     <IconButton
                       size="small"
-                      onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                      onClick={() =>
+                        handleQuantityChange(item.id, item.quantity - 1)
+                      }
                     >
                       <Remove />
                     </IconButton>
-                    
-                    <Typography variant="body1" sx={{ minWidth: 30, textAlign: 'center' }}>
+
+                    <Typography
+                      variant="body1"
+                      sx={{ minWidth: 30, textAlign: "center" }}
+                    >
                       {item.quantity}
                     </Typography>
-                    
+
                     <IconButton
                       size="small"
-                      onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                      onClick={() =>
+                        handleQuantityChange(item.id, item.quantity + 1)
+                      }
                     >
                       <Add />
                     </IconButton>
                   </Box>
-                  
-                  <Typography variant="h6" sx={{ minWidth: 80, textAlign: 'right' }}>
+
+                  <Typography
+                    variant="h6"
+                    sx={{ minWidth: 80, textAlign: "right" }}
+                  >
                     €{(item.price * item.quantity).toFixed(2)}
                   </Typography>
-                  
+
                   <IconButton
                     color="error"
                     onClick={() => removeFromCart(item.id)}
@@ -132,7 +140,11 @@ const Cart = () => {
           ))}
 
           <Box display="flex" justifyContent="space-between" mt={2}>
-            <Button variant="outlined" color="error" onClick={() => clearCart()}>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => clearCart()}
+            >
               Vyprázdniť košík
             </Button>
           </Box>
@@ -144,27 +156,23 @@ const Cart = () => {
               <Typography variant="h6" gutterBottom>
                 Súhrn objednávky
               </Typography>
-
               <Divider sx={{ my: 2 }} />
-
               <Box display="flex" justifyContent="space-between" mb={1}>
                 <Typography>Medzisúčet:</Typography>
                 <Typography>€{getCartTotal().toFixed(2)}</Typography>
               </Box>
-
               <Box display="flex" justifyContent="space-between" mb={1}>
                 <Typography>Doprava:</Typography>
                 <Typography>€5.00</Typography>
               </Box>
-
               <Divider sx={{ my: 1 }} />
-
               <Box display="flex" justifyContent="space-between" mb={3}>
                 <Typography variant="h6">Celkom:</Typography>
                 <Typography variant="h6">
                   €{(getCartTotal() + 5).toFixed(2)}
                 </Typography>
-              </Box>              <Button
+              </Box>{" "}
+              <Button
                 fullWidth
                 variant="contained"
                 size="large"

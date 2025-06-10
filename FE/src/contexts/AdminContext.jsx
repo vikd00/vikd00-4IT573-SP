@@ -115,7 +115,7 @@ export const AdminProvider = ({ children }) => {
       (order) => order.status === "Pending"
     ).length;
     const lowStockProducts = products.filter(
-      (product) => product.stock < 10
+      (product) => product.stock < 5
     ).length;
 
     return {
@@ -244,37 +244,31 @@ export const AdminProvider = ({ children }) => {
     }
   };
   const value = {
-    // Data
     products,
     orders,
     users,
     dashboardMetrics,
     loading,
 
-    // Product operations
     addProduct,
     updateProduct,
     deleteProduct,
 
-    // Order operations
     updateOrderStatus,
-    deleteOrder, // User operations
+    deleteOrder, 
     updateUser,
     updateUserPassword,
     toggleUserStatus,
     deleteUser,
     addUser,
 
-    // Dashboard
     getDashboardStats,
 
-    // Reload functions
     loadUsers,
     loadOrders,
     loadProducts,
     loadDashboardMetrics,
 
-    // Mock notifications for dashboard
     notifications: [],
   };
 

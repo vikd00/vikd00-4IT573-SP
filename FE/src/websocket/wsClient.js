@@ -28,7 +28,8 @@ export default function createWsClient(url) {
     } else {
       console.log(`wsClient: No subscribers found for type: ${type}`);
     }
-  }  function connect() {
+  }
+  function connect() {
     if (
       ws &&
       (ws.readyState === WebSocket.CONNECTING ||
@@ -39,7 +40,9 @@ export default function createWsClient(url) {
     }
 
     if (isAttemptingConnectionRef.current) {
-      console.log(`wsClient: Connection attempt already in progress for ${clientUrl}. Aborting new attempt.`);
+      console.log(
+        `wsClient: Connection attempt already in progress for ${clientUrl}. Aborting new attempt.`
+      );
       return;
     }
     isAttemptingConnectionRef.current = true;
@@ -59,19 +62,23 @@ export default function createWsClient(url) {
       };
 
       ws.onclose = (event) => {
-        console.log(
-          `Disconnected from ${clientUrl}`,
-          event.code,
-          event.reason
-        );
+        console.log(`Disconnected from ${clientUrl}`, event.code, event.reason);
         const oldWs = ws;
         connected = false;
         ws = null;
 
-        notifySubscribers("__status", { connected: false, code: event.code, reason: event.reason });
+        notifySubscribers("__status", {
+          connected: false,
+          code: event.code,
+          reason: event.reason,
+        });
 
-        // Simplified Reconnect: If not a manual/clean close AND not "No Status Rcvd" AND oldWs exists AND under max attempts
-        if (event.code !== 1000 && event.code !== 1005 && oldWs && reconnectAttempts < maxReconnectAttempts) {
+        if (
+          event.code !== 1000 &&
+          event.code !== 1005 &&
+          oldWs &&
+          reconnectAttempts < maxReconnectAttempts
+        ) {
           const delay = Math.pow(2, reconnectAttempts) * 1000; // Exponential backoff
           console.log(
             `Reconnecting to ${clientUrl} in ${delay}ms (attempt ${
@@ -108,17 +115,24 @@ export default function createWsClient(url) {
       console.error(`Error creating WebSocket for ${clientUrl}:`, error);
       isAttemptingConnectionRef.current = false;
     }
-  }  function disconnect() {
+  }
+  function disconnect() {
     clearTimeout(reconnectTimeout);
     reconnectTimeout = null;
     reconnectAttempts = 0;
     isAttemptingConnectionRef.current = false; // If we manually disconnect, we are no longer attempting.
 
-    if (ws && ws.readyState !== WebSocket.CLOSING && ws.readyState !== WebSocket.CLOSED) {
+    if (
+      ws &&
+      ws.readyState !== WebSocket.CLOSING &&
+      ws.readyState !== WebSocket.CLOSED
+    ) {
       ws.close(1000, "Manual disconnect by client");
       // The onclose handler will set ws = null
     } else if (ws) {
-      console.log(`wsClient: disconnect called on ${clientUrl}, but ws.readyState is already ${ws.readyState}`);
+      console.log(
+        `wsClient: disconnect called on ${clientUrl}, but ws.readyState is already ${ws.readyState}`
+      );
     }
 
     console.log(`Manual disconnect initiated for ${clientUrl}`);
