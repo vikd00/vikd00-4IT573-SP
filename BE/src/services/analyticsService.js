@@ -44,7 +44,7 @@ export async function calcMetrics() {
     const lowStockProducts = await db
       .select()
       .from(schema.products)
-      .where(lte(schema.products.inventory, 10))
+      .where(lte(schema.products.inventory, 5))
       .all();
 
     const recentOrders = await db
@@ -86,7 +86,7 @@ export async function getLowStockProducts() {
     return await db
       .select()
       .from(schema.products)
-      .where(lte(schema.products.inventory, 10))
+      .where(lte(schema.products.inventory, 5))
       .all();
   } catch (error) {
     console.error("Error getting low stock products:", error);

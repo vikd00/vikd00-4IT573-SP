@@ -38,7 +38,7 @@ export async function createOrder(userId, { shippingAddress }) {
           inventory: newInventory,
         })
         .where(eq(schema.products.id, item.productId));
-      if (newInventory <= 10 && newInventory > 0) {
+      if (newInventory <= 5 && newInventory > 0) {
         wsNotifyService.lowStock({
           id: product.id,
           name: product.name,

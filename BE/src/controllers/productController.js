@@ -46,7 +46,7 @@ export async function updateProduct(id, updates) {
 
   wsNotifyService.productUpdated(updatedProduct);
 
-  if (updatedProduct.inventory <= 10 && updatedProduct.inventory > 0) {
+  if (updatedProduct.inventory <= 5 && updatedProduct.inventory > 0) {
     wsNotifyService.lowStock(updatedProduct);
   }
 

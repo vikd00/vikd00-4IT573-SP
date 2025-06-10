@@ -87,7 +87,7 @@ export function productCreated(product) {
     timestamp: new Date().toISOString(),
   });
 
-  if (product.inventory <= 10) {
+  if (product.inventory <= 5) {
     dashboardUpdate();
   }
 }
