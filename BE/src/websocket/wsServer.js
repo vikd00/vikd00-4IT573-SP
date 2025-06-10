@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import WebSocket, { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from "ws";
 
 const connections = new Map();
 let connectionCounter = 0;
@@ -8,7 +8,7 @@ function authenticateWebSocket(token) {
   if (!token) {
     return null;
   }
-  
+
   try {
     return jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
   } catch (error) {
@@ -34,46 +34,56 @@ export const createWebSocketHandler = () => {
           role: null,
           isAdmin: false,
           isAnonymous: true,
-          connectionId: connId
+          connectionId: connId,
         };
 
         if (decodedToken && decodedToken.userId) {
           connectionInfo.userId = decodedToken.userId;
           connectionInfo.role = decodedToken.role;
-          connectionInfo.isAdmin = decodedToken.role === 'admin';
+          connectionInfo.isAdmin = decodedToken.role === "admin";
           connectionInfo.isAnonymous = false;
 
-          console.log(`WebSocket connected: UserID ${connectionInfo.userId}, Role ${connectionInfo.role}, Admin ${connectionInfo.isAdmin}, ConnID ${connId}`);
+          console.log(
+            `WebSocket connected: UserID ${connectionInfo.userId}, Role ${connectionInfo.role}, Admin ${connectionInfo.isAdmin}, ConnID ${connId}`
+          );
         } else {
           console.log(`WebSocket connected: Anonymous, ConnID ${connId}`);
         }
 
         ws.connId = connId;
         connections.set(connId, connectionInfo);
-        
+
         const stats = getConnectionStats();
         console.log("Current connection stats:", stats);
       },
       onClose: (evt, ws) => {
         const closedConnId = ws.connId;
-        
+
         if (connections.has(closedConnId)) {
           const connInfo = connections.get(closedConnId);
           connections.delete(closedConnId);
-          
-          console.log(`WebSocket disconnected: UserID ${connInfo.userId || 'Anon'}, ConnID ${closedConnId}. Reason: ${evt.code} ${evt.reason}`);
+
+          console.log(
+            `WebSocket disconnected: UserID ${
+              connInfo.userId || "Anon"
+            }, ConnID ${closedConnId}. Reason: ${evt.code} ${evt.reason}`
+          );
         } else {
-          console.warn(`WebSocket disconnected: Unknown ConnID ${closedConnId}`);
+          console.warn(
+            `WebSocket disconnected: Unknown ConnID ${closedConnId}`
+          );
         }
-        
+
         const stats = getConnectionStats();
         console.log("Current connection stats:", stats);
       },
       onMessage: async (evt, ws) => {
         const connInfo = connections.get(ws.connId);
-        
+
         if (!connInfo) {
-          console.error(`WebSocket message from untracked connection: ${ws.connId}`);
+          console.error(
+            `WebSocket message from untracked connection: ${ws.connId}`
+          );
           ws.close(1011, "Untracked connection");
           return;
         }
@@ -124,7 +134,11 @@ export const createWebSocketHandler = () => {
         }
       },
       onError: (err, ws) => {
-        console.error("WebSocket error for connection:", ws.connId || 'unknown', err);
+        console.error(
+          "WebSocket error for connection:",
+          ws.connId || "unknown",
+          err
+        );
       },
     };
   };
@@ -139,7 +153,7 @@ function getConnectionStats() {
 
   for (const conn of connections.values()) {
     totalConnections++;
-    
+
     if (conn.isAnonymous) {
       anonymousConnections++;
     } else {
@@ -148,7 +162,7 @@ function getConnectionStats() {
       } else {
         authenticatedUserConnections++;
       }
-      
+
       if (conn.userId) {
         uniqueUserIds.add(conn.userId);
       }
@@ -160,7 +174,7 @@ function getConnectionStats() {
     anonymousConnections,
     authenticatedUserConnections,
     adminConnections,
-    distinctAuthenticatedUsers: uniqueUserIds.size
+    distinctAuthenticatedUsers: uniqueUserIds.size,
   };
 }
 
@@ -174,19 +188,29 @@ function sendToFilteredConnections(filterFn, payload, messageContext) {
         conn.ws.send(message);
         sentCount++;
       } catch (error) {
-        console.error(`Failed to send message to connection ${conn.connectionId}:`, error);
+        console.error(
+          `Failed to send message to connection ${conn.connectionId}:`,
+          error
+        );
       }
     }
   });
 
   const stats = getConnectionStats();
-  console.log(`Sent ${messageContext} to ${sentCount} connection(s). Stats:`, stats);
-  
+  console.log(
+    `Sent ${messageContext} to ${sentCount} connection(s). Stats:`,
+    stats
+  );
+
   return sentCount;
 }
 
 export function sendToAll(payload) {
-  return sendToFilteredConnections(() => true, payload, `message type ${payload.type} to ALL`);
+  return sendToFilteredConnections(
+    () => true,
+    payload,
+    `message type ${payload.type} to ALL`
+  );
 }
 
 export function sendToAdmins(eventType, data) {
@@ -195,13 +219,13 @@ export function sendToAdmins(eventType, data) {
     data: {
       type: eventType,
       timestamp: new Date().toISOString(),
-      ...data
-    }
+      ...data,
+    },
   };
-  
+
   return sendToFilteredConnections(
-    conn => conn.isAdmin && !conn.isAnonymous, 
-    payload, 
+    (conn) => conn.isAdmin && !conn.isAnonymous,
+    payload,
     `admin event ${eventType}`
   );
 }
@@ -211,9 +235,9 @@ export function sendToUser(userId, payload) {
     console.warn("sendToUser called with null/undefined userId");
     return 0;
   }
-  
+
   return sendToFilteredConnections(
-    conn => conn.userId === userId && !conn.isAnonymous,
+    (conn) => conn.userId === userId && !conn.isAnonymous,
     payload,
     `message type ${payload.type} to UserID ${userId}`
   );
@@ -223,11 +247,11 @@ export function sendDashboardMetrics(metrics) {
   const payload = {
     type: "dashboardMetrics",
     data: metrics,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  
+
   return sendToFilteredConnections(
-    conn => conn.isAdmin && !conn.isAnonymous,
+    (conn) => conn.isAdmin && !conn.isAnonymous,
     payload,
     "dashboard metrics"
   );

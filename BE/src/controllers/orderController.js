@@ -1,5 +1,5 @@
 import { db } from "../config/database.js";
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import * as schema from "../models/schema.js";
 import { getProductById } from "./productController.js";
 import { getCartByUserId } from "./cartController.js";
@@ -30,7 +30,6 @@ export async function createOrder(userId, { shippingAddress }) {
         quantity: item.quantity,
         price: product.price,
       });
-
       const newInventory = product.inventory - item.quantity;
       await db
         .update(schema.products)
@@ -38,6 +37,10 @@ export async function createOrder(userId, { shippingAddress }) {
           inventory: newInventory,
         })
         .where(eq(schema.products.id, item.productId));
+
+      const updatedProduct = await getProductById(item.productId);
+      wsNotifyService.productUpdated(updatedProduct);
+
       if (newInventory <= 5 && newInventory > 0) {
         wsNotifyService.lowStock({
           id: product.id,

@@ -76,14 +76,16 @@ export function productCreated(product) {
   });
 
   sendToAll({
-    type: "inventoryUpdate",
-    data: [
-      {
-        id: product.id,
-        inventory: product.inventory,
-        active: product.active,
-      },
-    ],
+    type: "productCreated",
+    data: {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      inventory: product.inventory,
+      active: product.active,
+      imageUrl: product.imageUrl,
+    },
     timestamp: new Date().toISOString(),
   });
 
@@ -102,14 +104,16 @@ export function productUpdated(product) {
   });
 
   sendToAll({
-    type: "inventoryUpdate",
-    data: [
-      {
-        id: product.id,
-        inventory: product.inventory,
-        active: product.active,
-      },
-    ],
+    type: "productUpdated",
+    data: {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      inventory: product.inventory,
+      active: product.active,
+      imageUrl: product.imageUrl,
+    },
     timestamp: new Date().toISOString(),
   });
 

@@ -1,6 +1,4 @@
 import { Hono } from "hono";
-import * as userController from "../../controllers/userController.js";
-import * as productController from "../../controllers/productController.js";
 import * as analyticsService from "../../services/analyticsService.js";
 import { adminAuthMiddleware } from "../../middleware/adminAuth.js";
 
