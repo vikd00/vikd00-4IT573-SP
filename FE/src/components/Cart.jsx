@@ -75,7 +75,7 @@ const Cart = () => {
                 <Box display="flex" alignItems="center" gap={2}>
                   <Box
                     component="img"
-                    src={item.image || "/api/placeholder/100/100"}
+                    src={item.imageUrl || "/api/placeholder/100/100"}
                     alt={item.name}
                     sx={{
                       width: 80,

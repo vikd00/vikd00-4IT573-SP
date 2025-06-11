@@ -294,9 +294,9 @@ const ProductList = ({
                 <CardMedia
                   component="img"
                   height="200"
-                  image={product.imageUrl || "/api/placeholder/300/200"}
+                  image={product.imageUrl || "https://placehold.jp/30/3d4070/ffffff/200x150.png?text=placeholder"}
                   alt={product.name}
-                  sx={{ objectFit: "cover" }}
+                  sx={{ objectFit: "scale-down", p: 1 }}
                 />
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h6" component="h2" gutterBottom noWrap>
