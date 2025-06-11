@@ -43,243 +43,208 @@ async function main() {
         createdAt: new Date().toISOString(),
       })
       .returning();
-
-    // Get user IDs from the returned results
     const testUserId = testUser[0].id;
-    const adminUserId = adminUser[0].id; // Create products
+    const adminUserId = adminUser[0].id;
+
     console.log("Creating products...");
     const productResults = await db
       .insert(schema.products)
       .values([
         {
-          name: "MacBook Pro 14-inch",
+          name: "Apple iPhone 16 Pro 128GB Black Titanium",
           description:
-            "Apple MacBook Pro with M3 chip, 14-inch Liquid Retina XDR display, 16GB memory, 512GB SSD storage.",
-          price: 199900, // $1999.00 in cents
-          inventory: 15,
-          imageUrl: "https://example.com/macbook-pro-14.jpg",
-          active: true,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          name: "iPhone 15 Pro",
-          description:
-            "iPhone 15 Pro with A17 Pro chip, 128GB storage, Titanium design, Pro camera system.",
-          price: 99900, // $999.00 in cents
+            "iPhone 16 Pro s čipom A18 Pro, 128GB úložisko, dizajn Black Titanium, pokročilý Pro kamerový systém s 5x teleobjektívom.",
+          price: 119900,
           inventory: 25,
-          imageUrl: "https://example.com/iphone-15-pro.jpg",
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/1fdfe0cb-e346-4e27-a336-a0683de7e7b8.jpg?width=2000&height=2000&fit=upsize",
           active: true,
           createdAt: new Date().toISOString(),
         },
         {
-          name: "AirPods Pro (2nd generation)",
+          name: "Apple Macbook Air 2020 Space Grey",
           description:
-            "Active Noise Cancellation, Transparency mode, Spatial Audio, MagSafe Charging Case.",
-          price: 24900, // $249.00 in cents
-          inventory: 50,
-          imageUrl: "https://example.com/airpods-pro.jpg",
+            "MacBook Air s čipom M1, 13,3-palcový Retina displej, Space Grey povrchová úprava, 8GB pamäť, 256GB SSD úložisko.",
+          price: 99900,
+          inventory: 15,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/2d2174ba-95c5-4714-bf8e-a038f425f394.jpg?width=2000&height=2000&fit=upsize",
           active: true,
           createdAt: new Date().toISOString(),
         },
         {
-          name: "iPad Air 11-inch",
+          name: "Apple iPad 10.9 (2024) 64GB Wi-Fi Blue",
           description:
-            "iPad Air with M2 chip, 11-inch Liquid Retina display, 128GB Wi-Fi model.",
-          price: 59900, // $599.00 in cents
+            "iPad 10,9-palcový s čipom A14 Bionic, 64GB úložisko, Wi-Fi model v krásnej modrej farbe, ideálny pre kreativitu a produktivitu.",
+          price: 37900,
           inventory: 30,
-          imageUrl: "https://example.com/ipad-air-11.jpg",
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/288c7f7f-eeb9-45a7-949e-104926adc440.jpg?width=2000&height=2000&fit=upsize",
           active: true,
           createdAt: new Date().toISOString(),
         },
         {
-          name: "Apple Watch Series 9",
+          name: "Xiaomi Mi TV Box S",
           description:
-            "GPS model, 45mm case, Sport Band, Health and fitness tracking.",
-          price: 42900, // $429.00 in cents
-          inventory: 8, // Low stock for testing inventory alerts
-          imageUrl: "https://example.com/apple-watch-series-9.jpg",
+            "Android TV streamovacie zariadenie s 4K HDR podporou, Google Assistant a prístupom k tisíckam aplikácií z Google Play Store.",
+          price: 5900,
+          inventory: 50,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/120d6845-11df-4c2c-b5cf-d05f840c16cd.jpg?width=2000&height=2000&fit=upsize",
           active: true,
           createdAt: new Date().toISOString(),
         },
         {
-          name: "Magic Mouse",
+          name: "Apple AirTag (1 Pack)",
           description:
-            "Wireless, rechargeable mouse with Multi-Touch surface and Lightning connector.",
-          price: 7900, // $79.00 in cents
+            "Presné vyhľadávacie zariadenie s Ultra Wideband technológiou, vymeniteľnou batériou a bezproblémovou integráciou s Find My sieťou.",
+          price: 2900,
+          inventory: 100,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/dcfc092c-531b-449a-83f7-e2adb874a19a.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "WD Elements Portable 2TB",
+          description:
+            "Prenosný externý pevný disk s kapacitou 2TB, USB 3.0 pripojenie, jednoduché nastavenie plug-and-play a spoľahlivé úložisko dát.",
+          price: 7900,
           inventory: 40,
-          imageUrl: "https://example.com/magic-mouse.jpg",
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/84a70796-569f-4251-a757-aa4b7a51e99b.jpg?width=2000&height=2000&fit=upsize",
           active: true,
           createdAt: new Date().toISOString(),
         },
         {
-          name: "Studio Display",
+          name: "Lenovo V15 G4",
           description:
-            "27-inch 5K Retina display, 12MP Ultra Wide camera, six-speaker sound system.",
-          price: 159900, // $1599.00 in cents
-          inventory: 5, // Low stock
-          imageUrl: "https://example.com/studio-display.jpg",
+            "Obchodný notebook s AMD Ryzen procesorom, 15,6-palcový displej, 8GB RAM, 256GB SSD, ideálny pre kancelársku prácu a produktivitu.",
+          price: 54900,
+          inventory: 20,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/1cf8b04f-ece5-4a7e-bd54-b66a014a0ed4.jpg?width=2000&height=2000&fit=upsize",
           active: true,
           createdAt: new Date().toISOString(),
         },
         {
-          name: "Discontinued Laptop",
-          description: "An old laptop model that's no longer available.",
-          price: 50000, // $500.00 in cents
+          name: "Asus TUF Gaming A15",
+          description:
+            "Herný notebook s AMD Ryzen procesorom, NVIDIA GeForce RTX grafikou, 15,6-palcový 144Hz displej, 16GB RAM, 512GB SSD.",
+          price: 89900,
+          inventory: 12,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/138d4a00-0744-4224-926c-b443da1d0368.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "Asus Vivobook 15",
+          description:
+            "Každodenný notebook s Intel Core procesorom, 15,6-palcový displej, 8GB RAM, 256GB SSD, elegantný dizajn pre bežné výpočtové potreby.",
+          price: 49900,
+          inventory: 25,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/34622d85-726e-4ada-ace3-a8885ea881ab.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "Xiaomi Redmi Note 14 5G 8GB/256GB Midnight Black",
+          description:
+            "5G smartfón s 8GB RAM, 256GB úložiskom, 108MP kamerovým systémom, 5000mAh batériou a rýchlym nabíjaním v farbe Midnight Black.",
+          price: 29900,
+          inventory: 35,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/93c2151a-52e0-473d-99ec-1c9b967749ab.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "Samsung Galaxy S25 12GB/128GB",
+          description:
+            "Vlajkový smartfón so Snapdragon procesorom, 12GB RAM, 128GB úložiskom, pokročilým kamerovým systémom a One UI rozhraním.",
+          price: 89900,
+          inventory: 18,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/294eb7f5-6069-4f09-89f2-05642c11b953.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "Dell Alienware AW3423DWF",
+          description:
+            "34-palcový zakrivený QD-OLED herný monitor s 175Hz obnovovacou frekvenciou, NVIDIA G-SYNC kompatibilitou a úžasnou vizuálnou kvalitou.",
+          price: 119900,
+          inventory: 8,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/671f7b6a-74e4-47d9-9379-56ba3e4559c5.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "Philips 243V7QJABF",
+          description:
+            "24-palcový Full HD IPS monitor s ultra-tenkým dizajnom, technológiou bez blikania a viacerými možnosťami pripojenia.",
+          price: 12900,
+          inventory: 45,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/a68526d0-98c8-4ab1-987c-b755b5f25e14.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "Sony Alpha A7 III",
+          description:
+            "Plnoformátový bezspätnový fotoaparát s 24,2MP senzorom, 4K video nahrávaním, 5-osovou stabilizáciou obrazu a profesionálnymi funkciami.",
+          price: 199900,
+          inventory: 6,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/9b08f51a-e664-408c-8a3f-ec18d6c5c844.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "Canon PowerShot SX740 HS",
+          description:
+            "Kompaktný digitálny fotoaparát s 40x optickým zoomom, 4K videom, Wi-Fi pripojením a výkonným spracovaním obrazu.",
+          price: 39900,
+          inventory: 22,
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/0545c5de-db8c-4000-aaa4-45d4faa21c95.jpg?width=2000&height=2000&fit=upsize",
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          name: "JBL Wave Beam",
+          description:
+            "Slúchadlá s kvalitným zvukom JBL Deep Bass dokonale padnú do uší.",
+          price: 50000,
           inventory: 0,
-          imageUrl: "https://example.com/old-laptop.jpg",
-          active: false, // Inactive product for testing
+          imageUrl:
+            "https://img-cdn.heureka.group/v1/8f78e7b5-8f3e-41bd-8671-cb49393520cb.jpg?width=2000&height=2000&fit=upsize",
+          active: false,
           createdAt: new Date(
             Date.now() - 365 * 24 * 60 * 60 * 1000
-          ).toISOString(), // 1 year ago
+          ).toISOString(),
         },
       ])
       .returning();
-
-    // Get product IDs for foreign key references
-    const macbookId = productResults[0].id;
-    const iphoneId = productResults[1].id;
-    const airpodsId = productResults[2].id;
-    const ipadId = productResults[3].id;
-    const watchId = productResults[4].id;
-    const mouseId = productResults[5].id;
-    const displayId = productResults[6].id;
-    const laptopId = productResults[7].id; // Create carts for users
-    console.log("Creating user carts...");
-    const testCart = await db
-      .insert(schema.carts)
-      .values({
-        userId: testUserId,
-        createdAt: new Date().toISOString(),
-      })
-      .returning();
-
-    const adminCart = await db
-      .insert(schema.carts)
-      .values({
-        userId: adminUserId,
-        createdAt: new Date().toISOString(),
-      })
-      .returning(); // Add some items to test user's cart
-    console.log("Adding items to test user cart...");
-    await db.insert(schema.cartItems).values([
-      {
-        cartId: testCart[0].id, // test user's cart
-        productId: airpodsId, // AirPods Pro
-        quantity: 1,
-      },
-      {
-        cartId: testCart[0].id, // test user's cart
-        productId: mouseId, // Magic Mouse
-        quantity: 2,
-      },
-    ]); // Create some sample orders
-    console.log("Creating sample orders...");
-    const order1 = await db
-      .insert(schema.orders)
-      .values({
-        userId: testUserId,
-        status: "delivered",
-        shippingAddress: "123 Main St, Cityville, State 12345, USA",
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
-        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-      })
-      .returning();
-
-    const order2 = await db
-      .insert(schema.orders)
-      .values({
-        userId: testUserId,
-        status: "shipped",
-        shippingAddress: "123 Main St, Cityville, State 12345, USA",
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-      })
-      .returning();
-
-    const order3 = await db
-      .insert(schema.orders)
-      .values({
-        userId: adminUserId,
-        status: "processing",
-        shippingAddress: "456 Admin Ave, Admin City, State 67890, USA",
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-      })
-      .returning();
-
-    const order4 = await db
-      .insert(schema.orders)
-      .values({
-        userId: testUserId,
-        status: "pending",
-        shippingAddress: "123 Main St, Cityville, State 12345, USA",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .returning(); // Add order items for the orders
-    console.log("Adding order items...");
-    await db.insert(schema.orderItems).values([
-      // Order 1 (delivered) - iPhone 15 Pro
-      {
-        orderId: order1[0].id,
-        productId: iphoneId, // iPhone 15 Pro
-        quantity: 1,
-        price: 99900,
-      },
-      {
-        orderId: order1[0].id,
-        productId: airpodsId, // AirPods Pro
-        quantity: 1,
-        price: 24900,
-      },
-
-      // Order 2 (shipped) - MacBook Pro
-      {
-        orderId: order2[0].id,
-        productId: macbookId, // MacBook Pro
-        quantity: 1,
-        price: 199900,
-      },
-      {
-        orderId: order2[0].id,
-        productId: mouseId, // Magic Mouse
-        quantity: 1,
-        price: 7900,
-      },
-
-      // Order 3 (processing) - iPad Air
-      {
-        orderId: order3[0].id,
-        productId: ipadId, // iPad Air
-        quantity: 1,
-        price: 59900,
-      },
-
-      // Order 4 (pending) - Apple Watch
-      {
-        orderId: order4[0].id,
-        productId: watchId, // Apple Watch
-        quantity: 1,
-        price: 42900,
-      },
-      {
-        orderId: order4[0].id,
-        productId: airpodsId, // AirPods Pro
-        quantity: 1,
-        price: 24900,
-      },
-    ]);
 
     console.log("Database seeding completed successfully!");
     console.log("\nCreated test accounts:");
     console.log("- Username: test, Password: password123 (regular user)");
     console.log("- Username: admin, Password: admin123 (admin user)");
-    console.log("\nCreated 8 products (7 active, 1 inactive)");
-    console.log("Created 4 sample orders with different statuses");
-    console.log("Added items to test user's cart");
-    console.log("\nSome products have low inventory for testing alerts:");
-    console.log("- Apple Watch Series 9: 8 units");
-    console.log("- Studio Display: 5 units");
+    console.log("\nCreated 16 products (15 active, 1 inactive):");
+    console.log(
+      "- Electronics: Smartphones, Laptops, Tablets, Monitors, Cameras"
+    );
+    console.log(
+      "- Accessories: Storage devices, Streaming devices, Tracking devices"
+    );
+    console.log(
+      "- Brands: Apple, Samsung, Xiaomi, Asus, Lenovo, Dell, Sony, Canon, WD, Philips"
+    );
   } catch (error) {
     console.error("Error seeding database:", error);
     process.exit(1);
